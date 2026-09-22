@@ -82,6 +82,7 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: #d9d5cc; }
   .dot.on { background: var(--ok); }
   .empty { color: var(--sub); font-size: 16px; padding: 8px 0; }
+  #meals { padding-bottom: 76px; }
 
   .fab { position: fixed; right: max(20px, calc(50% - 260px)); bottom: calc(84px + env(safe-area-inset-bottom)); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 32px; line-height: 1; box-shadow: 0 6px 18px rgba(194,86,46,.35); z-index: 6; }
 
@@ -329,6 +330,7 @@
       <div class="field"><label>時刻</label><input type="time" id="eTime"></div>
     </div>
     <p class="note" id="eSyncNote"></p>
+    <button class="linkbtn" id="eUnsync" hidden>ヘルスケアから削除したので、未送信に戻す</button>
     <div class="grid2">
       <button class="btn danger" id="deleteEntry">削除</button>
       <button class="btn" id="saveEntry">保存</button>
@@ -439,7 +441,7 @@
         // 旧版の保存データに、タンパク質と呼び方を補う
         const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
         const foods = (s.foods || []).map((f) => byId[f.id] && f.protein === undefined ? { ...byId[f.id], ...f, protein: byId[f.id].protein, aliases: byId[f.id].aliases } : f);
-        return { entries: s.entries, foods, imported: s.imported || [], settings: { ...DEFAULT_SETTINGS, ...s.settings } };
+        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], settings: { ...DEFAULT_SETTINGS, ...s.settings } };
       }
     } catch (e) {}
     return { entries: [], foods: DEFAULT_FOODS.slice(), imported: [], settings: { ...DEFAULT_SETTINGS } };
@@ -797,9 +799,14 @@
     $('eTime').value = editing.time;
     $('eSyncNote').textContent = editing.synced
       ? 'この記録はヘルスケアに送信済みです。修正・削除してもヘルスケア側は変わらないので、ヘルスケアアプリでも直してください。'
-      : '';
+      : editing.sendTried ? '一度ヘルスケアへ送ろうとした記録です。ヘルスケアに入っている場合は、送り直すと重複します。' : '';
+    $('eUnsync').hidden = !editing.synced;
     openSheet($('editSheet'));
   }
+  $('eUnsync').onclick = () => {
+    editing.synced = false; editing.sendTried = false;
+    save(); closeSheet(); renderLog(); toast('未送信に戻しました');
+  };
   $('saveEntry').onclick = () => {
     Object.assign(editing, {
       meal: editMeal, name: $('eName').value.trim() || editing.name, unit: $('eUnit').value.trim(),
@@ -831,7 +838,14 @@
       + '&x-error=' + encodeURIComponent(ng)
       + '&x-cancel=' + encodeURIComponent(ng);
   }
-  function sendToHealth(entries) { runShortcut(entries, `synced=${entries.map((e) => e.id).join(',')}`); }
+  // ヘルスケアは同じデータでも重複して保存するため、一度送ろうとした記録を再送するときは必ず確認する
+  const DUP_WARN = 'ヘルスケアは同じ記録を送ると、その分だけ重複して保存します。\nヘルスケアアプリの「栄養」で入っていないことを確認してから送ってください。\n\nこのまま送りますか？';
+  function sendToHealth(entries) {
+    const tried = entries.filter((e) => e.sendTried);
+    if (tried.length && !confirm(`${tried.length} 件は一度送信しようとした記録です（送信結果が戻ってきませんでした）。\n${DUP_WARN}`)) return;
+    entries.forEach((e) => (e.sendTried = true)); save();
+    runShortcut(entries, `synced=${entries.map((e) => e.id).join(',')}`);
+  }
   $('syncBtn').onclick = () => sendToHealth(state.entries.filter((e) => !e.synced));
 
   // ---------- KAIのリンクからの取り込み ----------
@@ -877,6 +891,10 @@
   }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
+    state.triedImports = state.triedImports || [];
+    const done = (state.imported || []).includes(imp.key), tried = state.triedImports.includes(imp.key);
+    if ((done || tried) && !confirm(`この記録は${done ? 'すでに取り込み済み' : '一度送信しようとしたもの'}です。\n${DUP_WARN}`)) return;
+    state.triedImports = [...state.triedImports.filter((k) => k !== imp.key), imp.key].slice(-300); save();
     const p = new URLSearchParams();
     p.set('m', `${imp.date}~${imp.time}~${imp.meal}`);
     imp.items.forEach((it) => p.append('i', [it.name, it.kcal, it.carb, it.fiber, it.fat, it.protein].join('~')));
