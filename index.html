@@ -185,6 +185,13 @@
 
 <!-- 記録 -->
 <main class="wrap view on" id="view-log">
+  <div class="unknown" id="standaloneWarn" hidden style="margin-top:16px">
+    <b>ホーム画面の「Webアプリ」として開いています。</b><br>
+    この開き方だと、記録がSafariと別の場所に保存され、KAIの分やヘルスケア送信の結果と合わなくなります。
+    下のボタンで記録をSafariへ移してから、ホーム画面のアイコンを作り直してください（作り直すとき「Webアプリとして開く」をオフにします）。
+    <div style="height:10px"></div>
+    <button class="btn block" id="moveToSafari">記録をSafariへ移す</button>
+  </div>
   <div class="card"><div class="meters" id="meters"></div></div>
   <button class="talkbtn" id="talkOpen"><b>🎤</b>食べたものを話す・書く</button>
   <div class="syncbar" id="syncbar" hidden>
@@ -449,7 +456,7 @@
         // 旧版の保存データに、タンパク質と呼び方を補う
         const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
         const foods = (s.foods || []).map((f) => byId[f.id] && f.protein === undefined ? { ...byId[f.id], ...f, protein: byId[f.id].protein, aliases: byId[f.id].aliases } : f);
-        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], home: !!s.home, settings: { ...DEFAULT_SETTINGS, ...s.settings } };
+        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], home: !!s.home, syncedIds: s.syncedIds || [], settings: { ...DEFAULT_SETTINGS, ...s.settings } };
       }
     } catch (e) {}
     return { entries: [], foods: DEFAULT_FOODS.slice(), imported: [], settings: { ...DEFAULT_SETTINGS } };
@@ -954,6 +961,11 @@
   function handleHash() {
     const raw = location.hash.slice(1);
     if (!raw) return;
+    if (raw.startsWith('merge=')) {
+      mergeFrom(raw.slice(6));
+      history.replaceState(null, '', location.pathname + location.search);
+      return;
+    }
     const params = new URLSearchParams(raw);
     if (params.has('i')) {
       const imp = parseImport(params);
@@ -984,6 +996,8 @@
       const ids = new Set(h.slice(7).split(','));
       let n = 0;
       state.entries.forEach((e) => { if (ids.has(e.id) && !e.synced) { e.synced = true; n++; } });
+      // このブラウザにない記録の送信完了（ホーム画面のWebアプリから送った分）も覚えておき、移したときに送信済みにする
+      state.syncedIds = [...(state.syncedIds || []), ...[...ids].filter((id) => !state.entries.some((e) => e.id === id))].slice(-500);
       save(); renderLog();
       if (n) toast(`${n} 件をヘルスケアに送りました`);
     } else if (h === 'syncerror') {
@@ -1082,8 +1096,32 @@
     if (document.visibilityState === 'visible') handleHash();
   });
 
+  // ---------- ホーム画面のWebアプリ対策 ----------
+  // Webアプリとして開くと保存場所がSafariと別になる。記録をURLに詰めてSafariへ渡し、Safari側で合わせる
+  const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  $('standaloneWarn').hidden = !standalone;
+  const b64enc = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64dec = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+  $('moveToSafari').onclick = () => {
+    const data = { entries: state.entries, foods: state.foods.filter((f) => !/^d\d+$/.test(f.id)) };
+    location.href = 'x-safari-' + location.href.split('#')[0] + '#merge=' + b64enc(JSON.stringify(data));
+  };
+  function mergeFrom(encoded) {
+    try {
+      const data = JSON.parse(b64dec(encoded));
+      const have = new Set(state.entries.map((e) => e.id));
+      const done = new Set(state.syncedIds || []);
+      const add = (data.entries || []).filter((e) => !have.has(e.id)).map((e) => (done.has(e.id) ? { ...e, synced: true } : e));
+      state.entries.push(...add);
+      const haveF = new Set(state.foods.map((f) => f.id));
+      state.foods.push(...(data.foods || []).filter((f) => !haveF.has(f.id)));
+      state.home = true; save(); renderLog();
+      toast(add.length ? `${add.length} 件の記録をSafariに移しました` : '移す記録はありませんでした（すべて移動済み）');
+    } catch (e) { toast('記録を移せませんでした'); }
+  }
+
   // リンクなしで開かれた＝ホーム画面やブックマークから開いたSafari。ここを記録の置き場所とみなす
-  if (!location.hash && !state.home) { state.home = true; save(); }
+  if (!location.hash && !state.home && !standalone) { state.home = true; save(); }
 
   renderLog();
   handleHash();
