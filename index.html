@@ -83,6 +83,7 @@
   .dot.on { background: var(--ok); }
   .empty { color: var(--sub); font-size: 16px; padding: 8px 0; }
   #meals { padding-bottom: 76px; }
+  .mealsum { font-size: 14px; color: var(--sub); margin: -4px 0 4px; font-variant-numeric: tabular-nums; }
 
   .fab { position: fixed; right: max(20px, calc(50% - 260px)); bottom: calc(84px + env(safe-area-inset-bottom)); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 32px; line-height: 1; box-shadow: 0 6px 18px rgba(194,86,46,.35); z-index: 6; }
 
@@ -346,10 +347,17 @@
     <p class="note" id="impWhen"></p>
     <div id="impItems"></div>
     <div class="calc" id="impTotal" style="margin-top:12px"></div>
-    <button class="btn block" id="impSend">記録してヘルスケアへ送る</button>
-    <div style="height:10px"></div>
-    <button class="btn block ghost" id="impLocal">ヘルスケアに送らず記録だけ</button>
-    <p class="note">「記録だけ」は、いま開いているブラウザに保存されます。Safariで開いているときだけ使ってください。</p>
+    <div id="impOutside" hidden>
+      <div class="unknown">この画面はSafariではありません（Claudeアプリの中のブラウザなど）。ここで記録すると、音声で入れた記録と別の場所に保存されてしまいます。Safariで開き直してから記録してください。</div>
+      <button class="btn block" id="impSafari">Safariで開く</button>
+      <p class="note">開かないときは、画面右下のコンパスのマーク（Safariで開く）を押してください。</p>
+      <button class="linkbtn" id="impHereSafari">いま開いているのはSafariなので、ここで記録する</button>
+    </div>
+    <div id="impInside">
+      <button class="btn block" id="impSend">記録してヘルスケアへ送る</button>
+      <div style="height:10px"></div>
+      <button class="btn block ghost" id="impLocal">ヘルスケアに送らず記録だけ</button>
+    </div>
     <button class="linkbtn" id="impCancel">取り込まない</button>
   </div>
 </section>
@@ -441,7 +449,7 @@
         // 旧版の保存データに、タンパク質と呼び方を補う
         const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
         const foods = (s.foods || []).map((f) => byId[f.id] && f.protein === undefined ? { ...byId[f.id], ...f, protein: byId[f.id].protein, aliases: byId[f.id].aliases } : f);
-        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], settings: { ...DEFAULT_SETTINGS, ...s.settings } };
+        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], home: !!s.home, settings: { ...DEFAULT_SETTINGS, ...s.settings } };
       }
     } catch (e) {}
     return { entries: [], foods: DEFAULT_FOODS.slice(), imported: [], settings: { ...DEFAULT_SETTINGS } };
@@ -520,13 +528,14 @@
 
     const unsynced = state.entries.filter((e) => !e.synced);
     $('syncbar').hidden = unsynced.length === 0;
-    $('syncText').textContent = `ヘルスケアに未送信の記録が ${unsynced.length} 件あります`;
+    $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（合計には含まれています）`;
 
     $('meals').innerHTML = MEALS.map((m) => {
       const items = list.filter((e) => e.meal === m);
       const mt = totals(items);
       return `<section class="meal">
         <h2>${m}<span>${items.length ? Math.round(mt.kcal) + ' kcal' : ''}</span></h2>
+        ${items.length > 1 ? `<div class="mealsum">合計　糖質 ${r1(mt.sugar)}g　脂質 ${r1(mt.fat)}g　タンパク質 ${r1(mt.protein)}g</div>` : ''}
         ${items.length ? items.map((e) => `
           <button class="entry" data-id="${e.id}">
             <span class="dot ${e.synced ? 'on' : ''}" title="${e.synced ? 'ヘルスケア送信済み' : '未送信'}"></span>
@@ -900,8 +909,20 @@
         <small>${macroText(e)}</small></span>
         <span class="kc">${Math.round(e.kcal)} kcal</span></div>`).join('') : '';
     $('impTotal').textContent = totalText(totals([...imp.items, ...extra]));
+    // Safari以外（Claudeアプリ内のブラウザなど）で開いたときは、Safariへ渡す
+    $('impOutside').hidden = !!state.home;
+    $('impInside').hidden = !state.home;
     openSheet($('importSheet'));
   }
+  $('impSafari').onclick = () => {
+    if (!pendingImport) return;
+    location.href = 'x-safari-' + location.href.split('#')[0] + '#' + pendingImport.raw;
+  };
+  $('impHereSafari').onclick = () => {
+    state.home = true; save();
+    $('impOutside').hidden = true; $('impInside').hidden = false;
+    history.replaceState(null, '', location.pathname + location.search);
+  };
   function importExtras(imp) { return state.entries.filter((e) => !e.synced && e.date === imp.date); }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
@@ -935,6 +956,7 @@
       if (params.has('k')) imp.key = params.get('k');
       if (!imp.items.length) toast('リンクの中身を読み取れませんでした');
       else if (params.get('ok') === '1') {
+        state.home = true; // ショートカットからの戻り先は必ずSafari
         const ids = new Set((params.get('s') || '').split(',').filter(Boolean));
         state.entries.forEach((e) => { if (ids.has(e.id)) e.synced = true; });
         save(); renderLog();
@@ -943,12 +965,18 @@
           toast(left ? `未送信の記録が ${left} 件残っています。「ヘルスケアへ送る」を押してください` : `${imp.items.length + ids.size} 品をヘルスケアに送りました`);
         }
       }
-      else openImport(imp);
+      else {
+        imp.raw = raw;
+        openImport(imp);
+        // Safari以外では、コンパスのマークからSafariへ渡せるようにリンクの中身をアドレスに残す
+        if (!state.home) return;
+      }
       history.replaceState(null, '', location.pathname + location.search);
       return;
     }
     const h = decodeURIComponent(raw);
     if (h.startsWith('synced=')) {
+      state.home = true;
       const ids = new Set(h.slice(7).split(','));
       let n = 0;
       state.entries.forEach((e) => { if (ids.has(e.id) && !e.synced) { e.synced = true; n++; } });
@@ -1049,6 +1077,9 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') handleHash();
   });
+
+  // リンクなしで開かれた＝ホーム画面やブックマークから開いたSafari。ここを記録の置き場所とみなす
+  if (!location.hash && !state.home) { state.home = true; save(); }
 
   renderLog();
   handleHash();
