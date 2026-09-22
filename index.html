@@ -685,13 +685,15 @@
     $('talkTotal').hidden = !talk.items.length;
     $('talkAdd').disabled = !talk.items.length;
   }
-  $('talkAdd').onclick = () => {
-    if (!talk || !talk.items.length) return;
-    const items = talk.items.map((it) => ({
+  function talkEntries() {
+    return talk.items.map((it) => ({
       foodId: it.f.id, name: it.f.name, unit: it.qty === 1 && !it.note ? it.f.unit : (it.note && !/換算/.test(it.note) ? it.note : `${it.f.unit || '1人前'} × ${r1(it.qty)}`),
       ...scale(it.f, it.qty),
     }));
-    addEntries(items, talk.date, timeFor(talk.date, talk.meal), talk.meal);
+  }
+  $('talkAdd').onclick = () => {
+    if (!talk || !talk.items.length) return;
+    addEntries(talkEntries(), talk.date, timeFor(talk.date, talk.meal), talk.meal);
   };
 
   // KAI（claude.ai）に計算を頼む。返ってくるリンクを押すとこのアプリに取り込まれる
@@ -710,6 +712,11 @@
       `${app}#m=${talk.date}~${time}~${talk.meal}&i=食品名~kcal~炭水化物~食物繊維~脂質~タンパク質`,
       '1品ごとに &i= を繰り返します。数値は小数1桁まで、単位は書きません。食品名に半角スペース、半角カッコ、~ & # + は使わず、必要なら全角にしてください。',
     ].filter(Boolean).join('\n');
+    // アプリで計算できた分は、KAIへ移る前に記録しておく（ヘルスケアへはKAIの分と一緒に送る）
+    if (talk.items.length) {
+      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, meal: talk.meal, synced: false, unit: '', ...it })));
+      save(); curDate = talk.date; renderLog();
+    }
     location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
   };
 
@@ -886,9 +893,16 @@
       <div class="entry"><span class="name"><div>${esc(e.name)}</div>
         <small>${macroText(e)}</small></span>
         <span class="kc">${Math.round(e.kcal)} kcal</span></div>`).join('');
-    $('impTotal').textContent = totalText(totals(imp.items));
+    // このブラウザに残っている同じ日の未送信の記録（アプリで先に計算した分など）も一緒に送る
+    const extra = importExtras(imp);
+    $('impItems').innerHTML += extra.length ? `<p class="note" style="margin-top:14px">あわせてヘルスケアへ送る、アプリで記録済みの分</p>` + extra.map((e) => `
+      <div class="entry"><span class="dot"></span><span class="name"><div>${esc(e.name)}</div>
+        <small>${macroText(e)}</small></span>
+        <span class="kc">${Math.round(e.kcal)} kcal</span></div>`).join('') : '';
+    $('impTotal').textContent = totalText(totals([...imp.items, ...extra]));
     openSheet($('importSheet'));
   }
+  function importExtras(imp) { return state.entries.filter((e) => !e.synced && e.date === imp.date); }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
     state.triedImports = state.triedImports || [];
@@ -898,8 +912,13 @@
     const p = new URLSearchParams();
     p.set('m', `${imp.date}~${imp.time}~${imp.meal}`);
     imp.items.forEach((it) => p.append('i', [it.name, it.kcal, it.carb, it.fiber, it.fat, it.protein].join('~')));
+    const extra = importExtras(imp);
+    const triedExtra = extra.filter((e) => e.sendTried);
+    if (triedExtra.length && !confirm(`あわせて送る記録のうち ${triedExtra.length} 件は、一度送信しようとした記録です。\n${DUP_WARN}`)) return;
+    extra.forEach((e) => (e.sendTried = true)); save();
     p.set('k', imp.key); p.set('ok', '1');
-    runShortcut(imp.items.map((it) => ({ ...it, date: imp.date, time: imp.time })), p.toString());
+    if (extra.length) p.set('s', extra.map((e) => e.id).join(','));
+    runShortcut([...imp.items.map((it) => ({ ...it, date: imp.date, time: imp.time })), ...extra], p.toString());
   };
   $('impLocal').onclick = () => {
     if (pendingImport && importEntries(pendingImport, false)) toast(`${pendingImport.items.length} 品を記録しました`);
@@ -915,7 +934,15 @@
       const imp = parseImport(params);
       if (params.has('k')) imp.key = params.get('k');
       if (!imp.items.length) toast('リンクの中身を読み取れませんでした');
-      else if (params.get('ok') === '1') { if (importEntries(imp, true)) toast(`${imp.items.length} 品を記録し、ヘルスケアに送りました`); }
+      else if (params.get('ok') === '1') {
+        const ids = new Set((params.get('s') || '').split(',').filter(Boolean));
+        state.entries.forEach((e) => { if (ids.has(e.id)) e.synced = true; });
+        save(); renderLog();
+        if (importEntries(imp, true)) {
+          const left = state.entries.filter((e) => !e.synced && e.date === imp.date).length;
+          toast(left ? `未送信の記録が ${left} 件残っています。「ヘルスケアへ送る」を押してください` : `${imp.items.length + ids.size} 品をヘルスケアに送りました`);
+        }
+      }
       else openImport(imp);
       history.replaceState(null, '', location.pathname + location.search);
       return;
