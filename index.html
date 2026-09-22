@@ -917,6 +917,10 @@
   $('impSafari').onclick = () => {
     if (!pendingImport) return;
     location.href = 'x-safari-' + location.href.split('#')[0] + '#' + pendingImport.raw;
+    // すでにSafariの中なら何も起きないので、画面が切り替わらなければSafariとみなして記録画面にする
+    setTimeout(() => {
+      if (document.visibilityState === 'visible') { $('impHereSafari').click(); toast('ここはSafariでした。このまま記録できます'); }
+    }, 1500);
   };
   $('impHereSafari').onclick = () => {
     state.home = true; save();
