@@ -22,6 +22,8 @@
     --sugar: #b8860b;
     --fat: #4a6fa5;
     --protein: #3f7d4e;
+    --alc: #7a4e9c;
+    --lift: #3f7d4e;
     --radius: 14px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -168,6 +170,65 @@
 
   .toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #1d1d1b; color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 16px; z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
   .toast.on { opacity: 1; }
+
+  /* お酒 */
+  .meter.wide { grid-column: 1 / -1; }
+  .meter .week { font-size: 14px; color: var(--sub); }
+
+  /* からだ */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { background: #fff; border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  .tile small { display: block; color: var(--sub); font-size: 14px; }
+  .tile b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .tile .d { font-size: 14px; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .tile .d.good { color: var(--ok); font-weight: 700; }
+  .tile .d.bad { color: var(--warn); font-weight: 700; }
+  .verdict { font-size: 16px; margin: 12px 0 0; }
+  .verdict.good { color: var(--ok); }
+  .verdict.bad { color: var(--warn); }
+  svg.chart2 { width: 100%; height: auto; display: block; overflow: visible; }
+  svg.chart2 text { font-size: 10px; fill: var(--sub); font-family: inherit; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--sub); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+  .kv:last-of-type { border-bottom: 0; }
+  .kv span:first-child { min-width: 0; }
+  .kv span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .kv.hi span:last-child { color: var(--accent); font-size: 18px; }
+  .card .btn { margin-top: 10px; }
+
+  /* 写真 */
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+  .photos button { border: 0; padding: 0; background: var(--surface); border-radius: 10px; overflow: hidden; position: relative; aspect-ratio: 3 / 4; }
+  .photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photos span { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); color: #fff; font-size: 12px; padding: 2px 6px; text-align: left; }
+  .cam { position: fixed; inset: 0; background: #000; z-index: 40; display: flex; flex-direction: column; color: #fff; }
+  .cam .stage { position: relative; flex: 1; overflow: hidden; }
+  .cam video, .cam .ghost { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .cam .ghost { pointer-events: none; }
+  .cam .mirror { transform: scaleX(-1); }
+  .cam .guide { position: absolute; inset: 0; pointer-events: none; }
+  .cam .guide i { position: absolute; background: rgba(255,255,255,.35); }
+  .cam .count { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 120px; font-weight: 700; text-shadow: 0 2px 12px rgba(0,0,0,.6); pointer-events: none; }
+  .cam .bar2 { padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+  .cam .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .cam .seg { background: rgba(255,255,255,.15); margin: 0; }
+  .cam .seg button { color: #fff; }
+  .cam .seg button.on { background: #fff; color: #000; }
+  .cam .top2 { position: absolute; top: 0; left: 0; right: 0; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; display: flex; justify-content: space-between; gap: 8px; background: linear-gradient(rgba(0,0,0,.5), rgba(0,0,0,0)); z-index: 2; }
+  .cam .pill { border: 0; background: rgba(0,0,0,.5); color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 15px; }
+  .shutter { width: 72px; height: 72px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.25); flex: none; }
+  .shutter:active { background: #fff; }
+  .cam input[type=range] { flex: 1; accent-color: #fff; }
+  .cam .msg { position: absolute; left: 16px; right: 16px; top: 40%; text-align: center; font-size: 16px; }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cmp figure { margin: 0; }
+  .cmp img { width: 100%; border-radius: 10px; display: block; }
+  .cmp figcaption { font-size: 14px; color: var(--sub); text-align: center; margin-top: 4px; }
+  .overlaycmp { position: relative; border-radius: 10px; overflow: hidden; }
+  .overlaycmp img { width: 100%; display: block; }
+  .overlaycmp img + img { position: absolute; inset: 0; height: 100%; object-fit: cover; }
+  .cmpdiff { background: var(--surface); border-radius: 12px; padding: 10px 14px; margin: 10px 0; font-size: 16px; }
 </style>
 </head>
 <body>
@@ -201,6 +262,48 @@
   <div id="meals"></div>
 </main>
 
+<!-- からだ -->
+<main class="wrap view" id="view-body">
+  <div class="syncbar" id="hkBar">
+    <p id="hkText"></p>
+    <button class="btn small" id="hkBtn">取り込む</button>
+  </div>
+  <div class="card">
+    <div class="tiles" id="bodyTiles"></div>
+    <p class="verdict" id="bodyVerdict"></p>
+  </div>
+  <div class="seg" id="rangeSeg">
+    <button data-r="30" class="on">30日</button>
+    <button data-r="90">90日</button>
+    <button data-r="365">1年</button>
+  </div>
+  <h2 class="sec">体重</h2>
+  <div class="card"><div id="weightChart"></div></div>
+  <h2 class="sec">除脂肪体重（筋肉の目安）</h2>
+  <div class="card"><div id="leanChart"></div><p class="note" id="leanNote" style="margin-bottom:0"></p></div>
+  <div id="extraCharts"></div>
+
+  <h2 class="sec">お酒</h2>
+  <div class="card" id="alcCard"></div>
+
+  <h2 class="sec">食べる量の目安</h2>
+  <div class="card" id="energyCard"></div>
+
+  <h2 class="sec">お腹の写真</h2>
+  <p class="note" id="photoNote"></p>
+  <div class="grid2">
+    <button class="btn" id="camOpen">撮る</button>
+    <button class="btn ghost" id="cmpOpen">比べる</button>
+  </div>
+  <div class="photos" id="photoGrid"></div>
+  <input type="file" id="photoFile" accept="image/*" hidden>
+
+  <div style="height:14px"></div>
+  <button class="btn ghost block" id="bodyInputBtn">体重・腹囲・骨格筋率を手で入れる</button>
+  <button class="linkbtn" id="hkGuideBtn">取り込み用ショートカットの作り方</button>
+  <div style="height:24px"></div>
+</main>
+
 <!-- 推移 -->
 <main class="wrap view" id="view-history">
   <h2 class="sec">直近14日のカロリー</h2>
@@ -221,8 +324,23 @@
     <div class="field"><label>タンパク質（g）目標</label><input type="number" inputmode="numeric" id="goalProtein"></div>
   </div>
 
+  <h2 class="sec">からだの目標</h2>
+  <div class="grid2">
+    <div class="field"><label>目標体重（kg）</label><input type="number" inputmode="decimal" id="targetWeight" placeholder="未設定"></div>
+    <div class="field"><label>1週間に減らすペース（%）</label><input type="number" inputmode="decimal" step="0.1" id="pace"></div>
+  </div>
+  <p class="note">ペースは体重の0.5〜1%／週が、筋肉を落としにくい目安です。食べる量の目安はこのペースで計算します。</p>
+
+  <h2 class="sec">お酒の目標</h2>
+  <div class="grid2">
+    <div class="field"><label>1日の上限（純アルコールg）</label><input type="number" inputmode="numeric" id="alcMax"></div>
+    <div class="field"><label>週の飲まない日（日）</label><input type="number" inputmode="numeric" id="alcFreeDays"></div>
+  </div>
+  <p class="note">純アルコール20gは、ビール500ml缶1本、日本酒1合、ワイングラス2杯くらいです。厚労省のガイドラインでは、男性は1日平均40g以上で生活習慣病のリスクが上がるとされています。</p>
+
   <h2 class="sec">ヘルスケア連携</h2>
-  <div class="field"><label>ショートカットの名前（iPhoneで作った名前と完全に同じにする）</label><input type="text" id="scName"></div>
+  <div class="field"><label>取り込み用ショートカットの名前</label><input type="text" id="readScName"></div>
+  <div class="field"><label>送信用ショートカットの名前（iPhoneで作った名前と完全に同じにする）</label><input type="text" id="scName"></div>
   <label class="check"><input type="checkbox" id="autoSync"> 記録したらすぐヘルスケアへ送る</label>
   <p class="note">オフのときは、記録画面の「ヘルスケアへ送る」ボタンでまとめて送ります。送信に成功した記録には緑の点がつきます。</p>
   <button class="linkbtn" id="showGuide">ショートカットの作り方を見る</button>
@@ -232,11 +350,14 @@
   <div id="myFoods"></div>
 
   <h2 class="sec">バックアップ</h2>
-  <p class="note">記録はこのiPhoneのSafariの中だけに保存されています。ときどき書き出しておくと安心です。</p>
+  <p class="note">記録と写真はこのiPhoneのSafariの中だけに保存されています。Safariの履歴やWebサイトデータを消すと一緒に消えるので、ときどき書き出して「ファイル」アプリやGoogleドライブに置いておくと安心です。</p>
+  <p class="note" id="lastBackup"></p>
   <div class="grid2">
-    <button class="btn ghost" id="exportBtn">書き出す</button>
-    <button class="btn ghost" id="importBtn">読み込む</button>
+    <button class="btn ghost" id="exportBtn">記録だけ書き出す</button>
+    <button class="btn ghost" id="exportAllBtn">写真も含めて書き出す</button>
   </div>
+  <div style="height:10px"></div>
+  <button class="btn ghost block" id="importBtn">読み込む</button>
   <input type="file" id="importFile" accept="application/json,.json" hidden>
   <div style="height:24px"></div>
 </main>
@@ -245,7 +366,8 @@
 
 <nav class="tabs">
   <button class="on" data-view="log">記録</button>
-  <button data-view="history">推移</button>
+  <button data-view="body">からだ</button>
+  <button data-view="history">食事の推移</button>
   <button data-view="settings">設定</button>
 </nav>
 
@@ -312,6 +434,11 @@
         <div class="field"><label>炭水化物（g）</label><input type="number" inputmode="decimal" id="mCarb"></div>
         <div class="field"><label>食物繊維（g）</label><input type="number" inputmode="decimal" id="mFiber" placeholder="不明なら空欄"></div>
       </div>
+      <p class="note" style="margin-top:0">お酒の場合は、量と度数を入れると純アルコール量を計算します（カロリーが空欄なら、アルコール分から概算します）。</p>
+      <div class="grid2">
+        <div class="field"><label>お酒の量（ml）</label><input type="number" inputmode="decimal" id="mAlcMl"></div>
+        <div class="field"><label>度数（%）</label><input type="number" inputmode="decimal" id="mAbv"></div>
+      </div>
       <div class="calc" id="manualCalc"></div>
       <p class="note">成分表示に「糖質」と「食物繊維」が分けて書かれている場合は、足した値を炭水化物に入れてください。</p>
       <label class="check"><input type="checkbox" id="mSave" checked> マイ食品にも保存する</label>
@@ -336,6 +463,7 @@
       <div class="field"><label>炭水化物（g）</label><input type="number" inputmode="decimal" id="eCarb"></div>
       <div class="field"><label>食物繊維（g）</label><input type="number" inputmode="decimal" id="eFiber"></div>
       <div class="field"><label>時刻</label><input type="time" id="eTime"></div>
+      <div class="field"><label>純アルコール（g）</label><input type="number" inputmode="decimal" id="eAlc"></div>
     </div>
     <p class="note" id="eSyncNote"></p>
     <button class="linkbtn" id="eUnsync" hidden>ヘルスケアから削除したので、未送信に戻す</button>
@@ -398,15 +526,137 @@
   </div>
 </section>
 
+<!-- からだの手入力シート -->
+<section class="sheet" id="bodySheet">
+  <div class="wrap">
+    <div class="grab"></div>
+    <h3>からだの記録</h3>
+    <div class="field"><label>日付</label><input type="date" id="bDate"></div>
+    <div class="grid2">
+      <div class="field"><label>体重（kg）</label><input type="number" inputmode="decimal" id="bWeight"></div>
+      <div class="field"><label>体脂肪率（%）</label><input type="number" inputmode="decimal" id="bFat"></div>
+      <div class="field"><label>骨格筋率（%）</label><input type="number" inputmode="decimal" id="bMuscle"></div>
+      <div class="field"><label>腹囲（cm）</label><input type="number" inputmode="decimal" id="bWaist"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="bLift"> この日は筋トレをした</label>
+    <p class="note">骨格筋率はヘルスケアに項目がないため、オムロンのアプリで見た数字を週1回くらい入れてください。腹囲はおへその高さで、息を軽く吐いたところで測ります。体重と体脂肪率はふだんは取り込みで入るので、空欄のままで構いません。</p>
+    <button class="btn block" id="bSave">保存</button>
+  </div>
+</section>
+
+<!-- 取り込み用ショートカットの作り方 -->
+<section class="sheet" id="hkGuideSheet">
+  <div class="wrap">
+    <div class="grab"></div>
+    <h3>取り込み用ショートカットの作り方</h3>
+    <p class="note">ヘルスケアの体重・体脂肪率・消費カロリー・歩数を読み出して、このアプリに渡すショートカットです。最初に一度だけ作ります。15分ほどかかります。</p>
+    <ol class="steps">
+      <li>ショートカットアプリで新規作成し、名前を <code class="gReadName"></code> にする。</li>
+      <li>「ヘルスケアサンプルを検索」を追加する。
+        <ol>
+          <li>種類を「体重」にする。</li>
+          <li>「フィルタを追加」で「開始日」が「過去の」「30」「日」にする。</li>
+        </ol>
+      </li>
+      <li>「各項目を繰り返す」を追加する（対象は前のヘルスケアサンプル）。</li>
+      <li>繰り返しの中に「テキスト」を追加し、次のとおり入れる。
+        <ol>
+          <li>先頭に <code>体重</code> と半角スペース</li>
+          <li>変数「繰り返し項目」を入れ、その変数をタップして「開始日」を選ぶ</li>
+          <li>半角スペースと <code>=</code> と半角スペース</li>
+          <li>もう一度「繰り返し項目」を入れ、今度は「値」を選ぶ</li>
+        </ol>
+        できあがりは　体重 [開始日] = [値]　の形です。
+      </li>
+      <li>「繰り返す」の終わりの下に「変数に追加」を追加する。入力は「繰り返しの結果」、変数名は <code>rows</code>。</li>
+      <li>手順2から5と同じ組を、次の種類でも作る。先頭の言葉を種類に合わせて変えます。
+        <ol>
+          <li>体脂肪率　先頭は <code>体脂肪率</code></li>
+          <li>アクティブエネルギー　先頭は <code>活動</code>。検索の「グループ化」を「日」にする</li>
+          <li>安静時消費エネルギー　先頭は <code>安静時</code>。「グループ化」を「日」にする</li>
+          <li>歩数　先頭は <code>歩数</code>。「グループ化」を「日」にする</li>
+          <li>種類の一覧に「ワークアウト」があれば、先頭は <code>筋トレ</code>。値の代わりに「継続時間」を入れる。なければ省略して構いません</li>
+        </ol>
+      </li>
+      <li>最後に「テキストを結合」を追加し、入力は変数 <code>rows</code>、区切りは「改行」。</li>
+      <li>「URLエンコード」を追加する（入力は結合したテキスト）。</li>
+      <li>「URL」を追加し、<code id="gHealthUrl"></code> と入れたすぐ後ろに、変数「URLエンコードしたテキスト」を入れる。</li>
+      <li>「URLを開く」を追加して完了。最初の実行でヘルスケアの読み出し許可を聞かれるので、すべて「許可」する。</li>
+    </ol>
+    <p class="note">グループ化を忘れると、消費カロリーが細切れで大量に届きます（アプリ側で日ごとに足すので結果は同じですが、遅くなります）。</p>
+    <p class="note">過去の分をまとめて入れたいときは、最初の1回だけ「過去の」を「90」日にして実行し、そのあと30日に戻してください。</p>
+    <p class="note">毎日自動で取り込むには、ショートカットアプリの「オートメーション」で「時刻」を選び、毎朝（体組成計に乗ったあと）に、このショートカットを「すぐに実行」にします。手で取り込むときは、からだ画面の「取り込む」を押します。</p>
+    <button class="btn block ghost" id="closeHkGuide">閉じる</button>
+  </div>
+</section>
+
+<!-- 写真を見る -->
+<section class="sheet" id="photoSheet">
+  <div class="wrap">
+    <div class="grab"></div>
+    <h3 id="pvTitle"></h3>
+    <img id="pvImg" alt="" style="width:100%;border-radius:12px;display:block">
+    <p class="note" id="pvInfo"></p>
+    <div class="grid2">
+      <button class="btn danger" id="pvDelete">削除</button>
+      <button class="btn ghost" id="pvClose">閉じる</button>
+    </div>
+  </div>
+</section>
+
+<!-- 写真を比べる -->
+<section class="sheet" id="cmpSheet">
+  <div class="wrap">
+    <div class="grab"></div>
+    <h3>写真を比べる</h3>
+    <div class="seg" id="cmpPose"></div>
+    <div class="grid2">
+      <div class="field"><label>前</label><select id="cmpA"></select></div>
+      <div class="field"><label>後</label><select id="cmpB"></select></div>
+    </div>
+    <div class="seg" id="cmpMode">
+      <button data-m="side" class="on">並べる</button>
+      <button data-m="over">重ねる</button>
+    </div>
+    <div id="cmpView"></div>
+    <button class="btn block ghost" id="cmpClose" style="margin-top:12px">閉じる</button>
+  </div>
+</section>
+
+<!-- カメラ -->
+<div class="cam" id="cam" hidden>
+  <div class="stage">
+    <video id="camVideo" playsinline autoplay muted></video>
+    <img class="ghost" id="camGhost" alt="">
+    <div class="guide"><i style="left:50%;top:0;bottom:0;width:1px"></i><i style="top:33%;left:0;right:0;height:1px"></i><i style="top:66%;left:0;right:0;height:1px"></i></div>
+    <div class="count" id="camCount"></div>
+    <div class="msg" id="camMsg" hidden></div>
+    <div class="top2">
+      <button class="pill" id="camClose">閉じる</button>
+      <button class="pill" id="camFlip">カメラ切替</button>
+      <button class="pill" id="camTimer">タイマー 10秒</button>
+    </div>
+  </div>
+  <div class="bar2">
+    <div class="row"><span style="font-size:14px">前回の写真</span><input type="range" id="camGhostOp" min="0" max="80" value="35"></div>
+    <div class="row">
+      <div class="seg" id="camPose" style="flex:1"></div>
+      <button class="shutter" id="camShot" aria-label="撮影"></button>
+      <button class="pill" id="camLib" style="flex:1">写真から選ぶ</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 (() => {
   const KEY = 'mealLog.v1';
-  const MEALS = ['朝食', '昼食', '夕食', '間食'];
+  const MEALS = ['朝食', '昼食', '夕食', '間食', 'お酒'];
 
   // 目安値（日本食品標準成分表 八訂や一般的な1人前をもとに概算）。
-  // [名前, 量, kcal, 炭水化物g, 食物繊維g, 脂質g, タンパク質g, 話して記録で使う呼び方]
+  // [名前, 量, kcal, 炭水化物g, 食物繊維g, 脂質g, タンパク質g, 話して記録で使う呼び方, 純アルコールg]
+  // 純アルコールg = 量ml × 度数 × 0.8。id は並び順で決まるので、追加は必ず末尾に足す
   const DEFAULT_FOODS = [
     ['ごはん', '茶碗1杯 150g', 234, 55.7, 2.3, 0.5, 3.8, 'ご飯 白米 ライス 白ごはん'],
     ['ごはん（大盛り）', '250g', 390, 92.8, 3.8, 0.8, 6.3, 'ご飯大盛り ごはん大盛り 大盛りご飯 大盛りごはん ライス大盛り'],
@@ -441,25 +691,59 @@
     ['サラダ（ドレッシングなし）', '1皿', 20, 4.0, 1.5, 0.1, 1.0, 'サラダ 野菜サラダ'],
     ['コーヒー（ブラック）', '1杯', 8, 1.4, 0, 0, 0.4, 'コーヒー 珈琲 ブラックコーヒー'],
     ['カフェラテ', '1杯 M', 130, 10.0, 0, 6.5, 7.0, 'カフェオレ ラテ'],
-    ['ビール', '350ml缶', 140, 10.9, 0, 0, 1.1, '缶ビール 生ビール'],
-  ].map(([name, unit, kcal, carb, fiber, fat, protein, aliases], i) =>
-    ({ id: 'd' + i, name, unit, kcal, carb, fiber, fat, protein, aliases: aliases ? aliases.split(' ') : [] }));
+    ['ビール', '350ml缶 5%', 140, 10.9, 0, 0, 1.1, '缶ビール ビール350', 14],
+    ['ビール（ロング缶）', '500ml缶 5%', 200, 15.5, 0, 0, 1.5, 'ロング缶 ビールのロング缶 ビールロング缶 ビール500 ロング缶ビール', 20],
+    ['生ビール（中ジョッキ）', '1杯 350ml 5%', 140, 10.9, 0, 0, 1.1, '生ビール 生中 中ジョッキ', 14],
+    ['ハイボール', 'ジョッキ1杯 350ml 7%', 150, 3.0, 0, 0, 0, 'ハイボール缶 角ハイ ウイスキーハイボール', 19.6],
+    ['レモンサワー', '350ml缶 5%', 175, 15.0, 0, 0, 0, 'サワー チューハイ 酎ハイ 缶チューハイ レモンチューハイ', 14],
+    ['ストロング系チューハイ', '350ml缶 9%', 180, 10.0, 0, 0, 0, 'ストロング ストロングゼロ ストゼロ', 25.2],
+    ['ストロング系チューハイ（ロング缶）', '500ml缶 9%', 255, 14.0, 0, 0, 0, 'ストロングのロング缶 ストロング500 ストゼロのロング缶 ストゼロ500', 36],
+    ['日本酒', '1合 180ml 15%', 196, 8.8, 0, 0, 0.7, '熱燗 冷酒', 21.6],
+    ['焼酎（水割り・お湯割り）', '1杯 焼酎60ml 25%', 85, 0, 0, 0, 0, '焼酎 水割り お湯割り 焼酎の水割り 焼酎のお湯割り', 12],
+    ['ワイン', 'グラス1杯 120ml 12%', 88, 1.8, 0, 0, 0.1, '赤ワイン 白ワイン グラスワイン', 11.5],
+    ['ワイン（ボトル）', '1本 750ml 12%', 550, 11.0, 0, 0, 0.8, 'ワインボトル ワイン1本 ボトルワイン', 72],
+    ['ウイスキー', 'ダブル1杯 60ml 40%', 140, 0, 0, 0, 0, 'ウィスキー', 19.2],
+  ].map(([name, unit, kcal, carb, fiber, fat, protein, aliases, alc], i) =>
+    ({ id: 'd' + i, name, unit, kcal, carb, fiber, fat, protein, alc: alc || 0, aliases: aliases ? aliases.split(' ') : [] }));
+  const FOODS_VER = 2; // 2 = お酒を追加
 
-  const DEFAULT_SETTINGS = { goalKcal: 2000, goalSugar: 150, goalFat: 60, goalProtein: 65, scName: '食事をヘルスケアへ', autoSync: false };
+  const DEFAULT_SETTINGS = {
+    goalKcal: 2000, goalSugar: 150, goalFat: 60, goalProtein: 65, scName: '食事をヘルスケアへ', autoSync: false,
+    readScName: 'ヘルスケアから取り込み', targetWeight: 0, pace: 0.5, alcMax: 40, alcFreeDays: 2,
+  };
 
   // ---------- 保存 ----------
   let state;
+  // 保存データを今の形にそろえる（旧版のデータ・読み込んだバックアップにも使う）
+  function normalizeState(s) {
+    const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
+    const oldVer = s.foodsVer || 1;
+    // 最初から入っている食品は、呼び方と純アルコール量を最新の定義に合わせる
+    let foods = (s.foods || DEFAULT_FOODS).map((f) => {
+      const d = byId[f.id];
+      if (!d) return f;
+      return { ...d, ...f, protein: f.protein === undefined ? d.protein : f.protein, alc: d.alc, aliases: d.aliases, unit: oldVer < 2 ? d.unit : f.unit };
+    });
+    // 新しく足した食品（お酒）を補う。すでに入っていて自分で削除したものは戻さない
+    if (oldVer < FOODS_VER) {
+      const have = new Set(foods.map((f) => f.id));
+      foods = foods.concat(DEFAULT_FOODS.filter((f) => f.alc && !have.has(f.id)));
+    }
+    // お酒に対応する前に記録したビールにも、純アルコール量を補う
+    const entries = (s.entries || []).map((e) => e.alc === undefined && byId[e.foodId] && byId[e.foodId].alc
+      ? { ...e, alc: Math.round(byId[e.foodId].alc * (e.kcal / byId[e.foodId].kcal) * 10) / 10 } : e);
+    return {
+      entries, foods, foodsVer: FOODS_VER, imported: s.imported || [], triedImports: s.triedImports || [],
+      home: !!s.home, syncedIds: s.syncedIds || [], body: s.body || {}, bodyImportedAt: s.bodyImportedAt || '',
+      backupAt: s.backupAt || '', settings: { ...DEFAULT_SETTINGS, ...s.settings },
+    };
+  }
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(KEY));
-      if (s && s.entries) {
-        // 旧版の保存データに、タンパク質と呼び方を補う
-        const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
-        const foods = (s.foods || []).map((f) => byId[f.id] && f.protein === undefined ? { ...byId[f.id], ...f, protein: byId[f.id].protein, aliases: byId[f.id].aliases } : f);
-        return { entries: s.entries, foods, imported: s.imported || [], triedImports: s.triedImports || [], home: !!s.home, syncedIds: s.syncedIds || [], settings: { ...DEFAULT_SETTINGS, ...s.settings } };
-      }
+      if (s && s.entries) return normalizeState(s);
     } catch (e) {}
-    return { entries: [], foods: DEFAULT_FOODS.slice(), imported: [], settings: { ...DEFAULT_SETTINGS } };
+    return normalizeState({ foodsVer: FOODS_VER });
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('保存できませんでした'); }
@@ -478,9 +762,11 @@
   const sugarOf = (e) => Math.max(0, e.carb - e.fiber);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
-  const NUTR = ['kcal', 'carb', 'fiber', 'fat', 'protein'];
+  const NUTR = ['kcal', 'carb', 'fiber', 'fat', 'protein', 'alc'];
   const scale = (f, q) => Object.fromEntries(NUTR.map((k) => [k, r1((f[k] || 0) * q)]));
-  const macroText = (e) => `糖質 ${r1(sugarOf(e))}g　脂質 ${r1(e.fat)}g　タンパク質 ${r1(e.protein || 0)}g`;
+  const macroText = (e) => e.alc > 0
+    ? `純アルコール ${r1(e.alc)}g　糖質 ${r1(sugarOf(e))}g`
+    : `糖質 ${r1(sugarOf(e))}g　脂質 ${r1(e.fat)}g　タンパク質 ${r1(e.protein || 0)}g`;
   const dateLabel = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK[d.getDay()]}）`; };
 
   function mealByHour(h) { return h < 10 ? '朝食' : h < 15 ? '昼食' : h < 17 ? '間食' : '夕食'; }
@@ -491,10 +777,28 @@
   }
   function totals(entries) {
     return entries.reduce((a, e) => ({
-      kcal: a.kcal + e.kcal, sugar: a.sugar + sugarOf(e), fat: a.fat + e.fat, carb: a.carb + e.carb, protein: a.protein + (e.protein || 0),
-    }), { kcal: 0, sugar: 0, fat: 0, carb: 0, protein: 0 });
+      kcal: a.kcal + e.kcal, sugar: a.sugar + sugarOf(e), fat: a.fat + e.fat, carb: a.carb + e.carb, protein: a.protein + (e.protein || 0), alc: a.alc + (e.alc || 0),
+    }), { kcal: 0, sugar: 0, fat: 0, carb: 0, protein: 0, alc: 0 });
   }
-  const totalText = (t) => `合計 ${Math.round(t.kcal)} kcal　糖質 ${r1(t.sugar)}g　脂質 ${r1(t.fat)}g　タンパク質 ${r1(t.protein)}g`;
+  const totalText = (t) => `合計 ${Math.round(t.kcal)} kcal　糖質 ${r1(t.sugar)}g　脂質 ${r1(t.fat)}g　タンパク質 ${r1(t.protein)}g`
+    + (t.alc > 0 ? `　純アルコール ${r1(t.alc)}g` : '');
+  const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+  const dayAlc = (day) => state.entries.reduce((a, e) => a + (e.date === day ? e.alc || 0 : 0), 0);
+  const hasFood = (day) => state.entries.some((e) => e.date === day);
+  // 週は月曜はじまり
+  const weekStart = (s) => { const d = parseYmd(s); return addDays(s, -((d.getDay() + 6) % 7)); };
+  function weekAlc(day) {
+    const from = weekStart(day), days = [];
+    for (let d = from; d <= day; d = addDays(d, 1)) days.push(d);
+    const g = days.map(dayAlc);
+    // 何も記録していない日は、飲まなかったのか記録し忘れたのか分からないので「飲まない日」に数えない
+    return {
+      days: days.length, total: g.reduce((a, b) => a + b, 0),
+      free: days.filter((d, i) => g[i] === 0 && hasFood(d)).length,
+      blank: days.filter((d) => !hasFood(d)).length,
+      over: g.filter((x) => x > state.settings.alcMax).length,
+    };
+  }
 
   // ---------- 日付 ----------
   let curDate = ymd(new Date());
@@ -520,6 +824,21 @@
     </div>`;
   }
 
+  // お酒は「あと何g飲める」ではなく、上限を超えたかどうかと、今週の飲まない日を見せる
+  function alcMeter(g) {
+    const s = state.settings, w = weekAlc(curDate);
+    const pct = s.alcMax > 0 ? Math.min(100, (g / s.alcMax) * 100) : 0;
+    const text = g === 0 ? (hasFood(curDate) ? '飲まない日' : 'まだ記録がありません') : g <= s.alcMax ? `上限 ${s.alcMax}g 以内` : `上限を ${r1(g - s.alcMax)}g オーバー`;
+    const cls = g === 0 ? (hasFood(curDate) ? 'done' : '') : g <= s.alcMax ? '' : 'over';
+    return `<div class="meter wide">
+      <div class="label">お酒（純アルコール）</div>
+      <div class="num"><b>${r1(g)}</b> / 上限 ${s.alcMax}g</div>
+      <div class="bar"><i style="width:${pct}%;background:${cls === 'over' ? 'var(--warn)' : 'var(--alc)'}"></i></div>
+      <div class="rest ${cls}">${text}</div>
+      <div class="week">この週の飲まない日 ${w.free}日 / 目標 ${s.alcFreeDays}日${w.blank ? `（記録なし ${w.blank}日）` : ''}　この週の合計 ${Math.round(w.total)}g</div>
+    </div>`;
+  }
+
   function renderLog() {
     const isToday = curDate === ymd(new Date());
     $('dateTitle').textContent = dateLabel(curDate);
@@ -531,7 +850,8 @@
       meter('カロリー', t.kcal, s.goalKcal, 'kcal', 'var(--kcal)') +
       meter('タンパク質', t.protein, s.goalProtein, 'g', 'var(--protein)', true) +
       meter('糖質', t.sugar, s.goalSugar, 'g', 'var(--sugar)') +
-      meter('脂質', t.fat, s.goalFat, 'g', 'var(--fat)');
+      meter('脂質', t.fat, s.goalFat, 'g', 'var(--fat)') +
+      alcMeter(t.alc);
 
     const unsynced = state.entries.filter((e) => !e.synced);
     $('syncbar').hidden = unsynced.length === 0;
@@ -542,14 +862,14 @@
       const mt = totals(items);
       return `<section class="meal">
         <h2>${m}<span>${items.length ? Math.round(mt.kcal) + ' kcal' : ''}</span></h2>
-        ${items.length > 1 ? `<div class="mealsum">合計　糖質 ${r1(mt.sugar)}g　脂質 ${r1(mt.fat)}g　タンパク質 ${r1(mt.protein)}g</div>` : ''}
+        ${items.length > 1 ? `<div class="mealsum">合計　${m === 'お酒' ? `純アルコール ${r1(mt.alc)}g　糖質 ${r1(mt.sugar)}g` : `糖質 ${r1(mt.sugar)}g　脂質 ${r1(mt.fat)}g　タンパク質 ${r1(mt.protein)}g`}</div>` : ''}
         ${items.length ? items.map((e) => `
           <button class="entry" data-id="${e.id}">
             <span class="dot ${e.synced ? 'on' : ''}" title="${e.synced ? 'ヘルスケア送信済み' : '未送信'}"></span>
             <span class="name"><div>${esc(e.name)}${e.unit ? `<small>　${esc(e.unit)}</small>` : ''}</div>
               <small>${macroText(e)}</small></span>
             <span class="kc">${Math.round(e.kcal)} kcal</span>
-          </button>`).join('') : `<div class="empty">まだ記録がありません</div>`}
+          </button>`).join('') : `<div class="empty">${m === 'お酒' ? '飲んだら「ビール2本」のように話して記録します' : 'まだ記録がありません'}</div>`}
       </section>`;
     }).join('');
     $('meals').querySelectorAll('.entry').forEach((b) => (b.onclick = () => openEdit(b.dataset.id)));
@@ -569,8 +889,10 @@
   }
 
   // 記録を追加する共通処理
+  // お酒はどの食事と一緒に言っても「お酒」の欄に入れる
+  const mealOf = (it, meal) => (it.alc > 0 ? 'お酒' : meal === 'お酒' ? mealByHour(new Date().getHours()) : meal);
   function addEntries(items, date, time, meal) {
-    const added = items.map((it) => ({ id: uid(), date, time, meal, synced: false, unit: '', ...it }));
+    const added = items.map((it) => ({ id: uid(), date, time, synced: false, unit: '', ...it, meal: mealOf(it, meal) }));
     state.entries.push(...added); save(); curDate = date; closeSheet(); renderLog();
     if (state.settings.autoSync) sendToHealth(added);
     else toast(added.length === 1 ? `${added[0].name} を記録しました` : `${added.length} 品を記録しました`);
@@ -578,16 +900,17 @@
   function timeFor(date, meal) {
     // 今日で、今の時間帯の食事なら今の時刻、それ以外は食事区分に合わせた時刻
     if (date === ymd(new Date()) && meal === defaultMeal()) return hm(new Date());
-    return { '朝食': '07:30', '昼食': '12:30', '夕食': '19:00', '間食': '15:00' }[meal];
+    if (date === ymd(new Date()) && meal === 'お酒' && new Date().getHours() >= 17) return hm(new Date());
+    return { '朝食': '07:30', '昼食': '12:30', '夕食': '19:00', '間食': '15:00', 'お酒': '20:00' }[meal];
   }
 
   // ---------- 話して記録 ----------
   const KNUM = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, 'ひと': 1, 'ふた': 2, 'みっ': 3, 'よっ': 4, 'いつ': 5, '半': 0.5, '半分': 0.5 };
   const QNUM = '(\\d+(?:\\.\\d+)?|半分|半|[一二三四五六七八九十]|ひと|ふた|みっ|よっ|いつ)';
-  const QUNIT = '(g|グラム|ml|ミリ|cc|個|こ|杯|はい|本|枚|切れ|切|パック|皿|人前|つ|玉|缶|膳|丁|袋|カップ)?';
+  const QUNIT = '(g|グラム|ml|ミリ|cc|個|こ|杯|はい|本|枚|切れ|切|パック|皿|人前|つ|玉|缶|膳|丁|袋|カップ|合|グラス|ジョッキ)?';
   const AFTER_RE = new RegExp('^\\s*[をはもがの]?\\s*' + QNUM + '\\s*' + QUNIT);
   const COMPOUND_RE = /^(弁当|べんとう|丼|どん|定食|セット|御膳|バーガー|サンド|カレー|ラーメン|そば|うどん|パン|入り|味|風|チャーハン|炒め|煮|ソース|ドレッシング|まん|巻き)/;
-  const BEFORE_RE =new RegExp(QNUM + '\\s*(個|杯|本|枚|切れ|パック|皿|人前|つ|玉|缶|膳|丁|袋)の?\\s*$');
+  const BEFORE_RE =new RegExp(QNUM + '\\s*(個|杯|本|枚|切れ|パック|皿|人前|つ|玉|缶|膳|丁|袋|合|グラス)の?\\s*$');
 
   function normalize(t) {
     return t.replace(/[０-９．]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[ｇ]/g, 'g').replace(/　/g, ' ');
@@ -647,7 +970,7 @@
     let rest = [...t].map((c, i) => (used[i] ? '、' : c)).join('');
     rest = rest.replace(/(食べ|たべ|飲ん|のん|飲み|のみ|いただ)[ぁ-ん]*/g, '、')
       .replace(/(今日|昨日|一昨日|きょう|きのう|おととい)の?(朝|昼|夜|夕方|晩)?/g, '、');
-    const STOP = /^(今日|昨日|一昨日|きょう|きのう|おととい|さっき|今|朝|昼|夜|夕方|晩|お昼|朝ごはん|昼ごはん|晩ごはん|夜ごはん|夕ごはん|お昼ごはん|朝ご飯|昼ご飯|晩ご飯|夜ご飯|夕飯|晩飯|朝食|昼食|夕食|おやつ|間食|ランチ|ディナー|あと|それと|それから|そして|全部|ぜんぶ|です|ました|だけ|くらい|ぐらい|ほど|少し|ちょっと|半分|残した|残し|した|ます)$/;
+    const STOP = /^(お酒|酒|晩酌|飲み会|家飲み|今日|昨日|一昨日|きょう|きのう|おととい|さっき|今|朝|昼|夜|夕方|晩|お昼|朝ごはん|昼ごはん|晩ごはん|夜ごはん|夕ごはん|お昼ごはん|朝ご飯|昼ご飯|晩ご飯|夜ご飯|夕飯|晩飯|朝食|昼食|夕食|おやつ|間食|ランチ|ディナー|あと|それと|それから|そして|全部|ぜんぶ|です|ました|だけ|くらい|ぐらい|ほど|少し|ちょっと|半分|残した|残し|した|ます)$/;
     const unknown = rest.split(/[、,。.!！?？\s]+|と|や|を|は|に|も|で|が|から|まで|へ/)
       .map((s) => s.replace(/^の+|の+$/g, '').trim())
       .filter((s) => s.length >= 2 && !STOP.test(s) && !/^[\d.]+/.test(s) && !/^[ぁ-ん]{1,2}$/.test(s));
@@ -668,7 +991,8 @@
     const text = $('talkText').value.trim();
     if (!text) return toast('食べたものを入れてください');
     const p = parseSpeech(text);
-    talk = { text, date: p.date, meal: p.meal || defaultMeal(), items: p.items, unknown: p.unknown };
+    const onlyDrinks = p.items.length && p.items.every((it) => it.f.alc > 0);
+    talk = { text, date: p.date, meal: onlyDrinks ? 'お酒' : p.meal || defaultMeal(), items: p.items, unknown: p.unknown };
     segButtons($('talkMealSeg'), talk.meal, (m) => (talk.meal = m));
     renderTalk();
     $('talkResult').hidden = false;
@@ -676,7 +1000,7 @@
     setTimeout(() => $('talkResult').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
   function qtyLabel(it) {
-    return it.note && !/換算/.test(it.note) ? it.note : `${r1(it.qty)}${/個|本|枚|杯|切れ|パック|皿|玉|缶|丁/.exec(it.f.unit)?.[0] || '人前'}`;
+    return it.note && !/換算/.test(it.note) ? it.note : `${r1(it.qty)}${/個|本|枚|杯|切れ|パック|皿|玉|缶|丁|合/.exec(it.f.unit)?.[0] || '人前'}`;
   }
   function renderTalk() {
     $('talkWhen').textContent = dateLabel(talk.date) + (talk.date !== ymd(new Date()) ? '　の記録として追加します' : '');
@@ -727,10 +1051,11 @@
       '最後に、次の形式の記録用リンクを1本だけ、マークダウンのリンク [この内容で記録する](URL) で付けてください。',
       `${app}#m=${talk.date}~${time}~${talk.meal}&i=食品名~kcal~炭水化物~食物繊維~脂質~タンパク質`,
       '1品ごとに &i= を繰り返します。数値は小数1桁まで、単位は書きません。食品名に半角スペース、半角カッコ、~ & # + は使わず、必要なら全角にしてください。',
+      'お酒の場合は、タンパク質のあとに ~純アルコール量(g) を7つ目として付けてください（量ml × 度数 × 0.8）。',
     ].filter(Boolean).join('\n');
     // アプリで計算できた分は、KAIへ移る前に記録しておく（ヘルスケアへはKAIの分と一緒に送る）
     if (talk.items.length) {
-      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, meal: talk.meal, synced: false, unit: '', ...it })));
+      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', ...it, meal: mealOf(it, talk.meal) })));
       save(); curDate = talk.date; renderLog();
     }
     location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
@@ -743,7 +1068,7 @@
     segButtons($('mealSeg'), addMeal, (m) => (addMeal = m));
     setMode(mode);
     $('foodSearch').value = ''; $('qtyBox').hidden = true;
-    ['mName', 'mUnit', 'mKcal', 'mFat', 'mCarb', 'mFiber', 'mProtein'].forEach((id) => ($(id).value = ''));
+    ['mName', 'mUnit', 'mKcal', 'mFat', 'mCarb', 'mFiber', 'mProtein', 'mAlcMl', 'mAbv'].forEach((id) => ($(id).value = ''));
     renderFoodList(); updateManualCalc();
     openSheet($('addSheet'));
   }
@@ -794,16 +1119,22 @@
       curDate, timeFor(curDate, addMeal), addMeal);
   };
 
+  const manualAlc = () => r1(num($('mAlcMl').value) * num($('mAbv').value) / 100 * 0.8);
   function updateManualCalc() {
-    const carb = num($('mCarb').value), fiber = num($('mFiber').value);
-    $('manualCalc').textContent = `糖質 ${r1(Math.max(0, carb - fiber))}g（炭水化物 − 食物繊維）`;
+    const carb = num($('mCarb').value), fiber = num($('mFiber').value), alc = manualAlc();
+    $('manualCalc').textContent = `糖質 ${r1(Math.max(0, carb - fiber))}g（炭水化物 − 食物繊維）`
+      + (alc > 0 ? `　純アルコール ${alc}g` + ($('mKcal').value === '' ? `（約 ${Math.round(alc * 7 + carb * 4)} kcal）` : '') : '');
   }
-  ['mCarb', 'mFiber'].forEach((id) => ($(id).oninput = updateManualCalc));
+  ['mCarb', 'mFiber', 'mAlcMl', 'mAbv', 'mKcal'].forEach((id) => ($(id).oninput = updateManualCalc));
   $('addManual').onclick = () => {
     const name = $('mName').value.trim();
     if (!name) return toast('食品名を入れてください');
-    if ($('mKcal').value === '') return toast('カロリーを入れてください');
-    const f = { name, unit: $('mUnit').value.trim(), kcal: num($('mKcal').value), carb: num($('mCarb').value), fiber: num($('mFiber').value), fat: num($('mFat').value), protein: num($('mProtein').value) };
+    const alc = manualAlc();
+    if ($('mKcal').value === '' && !alc) return toast('カロリーを入れてください');
+    // お酒でカロリーが空欄なら、アルコール1g＝7kcalと糖質から概算する
+    const kcal = $('mKcal').value === '' ? Math.round(alc * 7 + num($('mCarb').value) * 4) : num($('mKcal').value);
+    const unit = $('mUnit').value.trim() || (alc ? `${num($('mAlcMl').value)}ml ${num($('mAbv').value)}%` : '');
+    const f = { name, unit, kcal, carb: num($('mCarb').value), fiber: num($('mFiber').value), fat: num($('mFat').value), protein: num($('mProtein').value), alc };
     let foodId;
     if ($('mSave').checked) { foodId = uid(); state.foods.push({ id: foodId, aliases: [], ...f }); }
     addEntries([{ foodId, ...f }], curDate, timeFor(curDate, addMeal), addMeal);
@@ -820,6 +1151,7 @@
     $('eKcal').value = editing.kcal; $('eFat').value = editing.fat; $('eProtein').value = editing.protein || 0;
     $('eCarb').value = editing.carb; $('eFiber').value = editing.fiber;
     $('eTime').value = editing.time;
+    $('eAlc').value = editing.alc || '';
     $('eSyncNote').textContent = editing.synced
       ? 'この記録はヘルスケアに送信済みです。修正・削除してもヘルスケア側は変わらないので、ヘルスケアアプリでも直してください。'
       : editing.sendTried ? '一度ヘルスケアへ送ろうとした記録です。ヘルスケアに入っている場合は、送り直すと重複します。' : '';
@@ -834,7 +1166,7 @@
     Object.assign(editing, {
       meal: editMeal, name: $('eName').value.trim() || editing.name, unit: $('eUnit').value.trim(),
       kcal: num($('eKcal').value), fat: num($('eFat').value), carb: num($('eCarb').value), fiber: num($('eFiber').value), protein: num($('eProtein').value),
-      time: $('eTime').value || editing.time,
+      time: $('eTime').value || editing.time, alc: num($('eAlc').value),
     });
     save(); closeSheet(); renderLog(); toast('保存しました');
   };
@@ -880,8 +1212,8 @@
     const [date, time, meal] = (params.get('m') || '').split('~');
     const now = new Date();
     const items = params.getAll('i').map((s) => {
-      const [name, kcal, carb, fiber, fat, protein] = s.split('~');
-      return { name: (name || '').trim(), kcal: num(kcal), carb: num(carb), fiber: num(fiber), fat: num(fat), protein: num(protein) };
+      const [name, kcal, carb, fiber, fat, protein, alc] = s.split('~');
+      return { name: (name || '').trim(), kcal: num(kcal), carb: num(carb), fiber: num(fiber), fat: num(fat), protein: num(protein), alc: num(alc) };
     }).filter((x) => x.name);
     const okTime = /^\d{1,2}:\d{2}$/.test(time || '');
     return {
@@ -895,7 +1227,7 @@
   function importEntries(imp, synced) {
     state.imported = state.imported || [];
     if (state.imported.includes(imp.key)) { toast('この記録はすでに取り込み済みです'); return false; }
-    imp.items.forEach((it) => state.entries.push({ id: uid(), date: imp.date, time: imp.time, meal: imp.meal, unit: '', synced, ...it }));
+    imp.items.forEach((it) => state.entries.push({ id: uid(), date: imp.date, time: imp.time, unit: '', synced, ...it, meal: mealOf(it, imp.meal) }));
     state.imported = [...state.imported, imp.key].slice(-300);
     save(); curDate = imp.date; renderLog();
     return true;
@@ -943,7 +1275,7 @@
     state.triedImports = [...state.triedImports.filter((k) => k !== imp.key), imp.key].slice(-300); save();
     const p = new URLSearchParams();
     p.set('m', `${imp.date}~${imp.time}~${imp.meal}`);
-    imp.items.forEach((it) => p.append('i', [it.name, it.kcal, it.carb, it.fiber, it.fat, it.protein].join('~')));
+    imp.items.forEach((it) => p.append('i', [it.name, it.kcal, it.carb, it.fiber, it.fat, it.protein, it.alc || 0].join('~')));
     const extra = importExtras(imp);
     const triedExtra = extra.filter((e) => e.sendTried);
     if (triedExtra.length && !confirm(`あわせて送る記録のうち ${triedExtra.length} 件は、一度送信しようとした記録です。\n${DUP_WARN}`)) return;
@@ -961,6 +1293,12 @@
   function handleHash() {
     const raw = location.hash.slice(1);
     if (!raw) return;
+    if (raw.startsWith('health=')) {
+      state.home = true; // ショートカットが開くURLはSafari
+      history.replaceState(null, '', location.pathname + location.search);
+      importHealth(raw.slice(7));
+      return;
+    }
     if (raw.startsWith('merge=')) {
       mergeFrom(raw.slice(6));
       history.replaceState(null, '', location.pathname + location.search);
@@ -1007,6 +1345,597 @@
   }
   window.addEventListener('hashchange', handleHash);
 
+  // ---------- ヘルスケアからの取り込み ----------
+  // ショートカット「ヘルスケアから取り込み」が開くURL： #health=（1行1件のテキストをURLエンコードしたもの）
+  //   行の形は「種類 開始日 = 値」。例「体重 2026/09/30 7:12 = 72.3」「活動 2026/09/29 0:00 = 512」
+  const HK_TYPES = [
+    [/^\s*(体脂肪|body ?fat)/i, 'fat'], [/^\s*(体重|weight)/i, 'weight'], [/^\s*(活動|アクティブ|active)/i, 'active'],
+    [/^\s*(安静|基礎|basal|resting)/i, 'basal'], [/^\s*(歩数|steps)/i, 'steps'], [/^\s*(筋トレ|ワークアウト|workout)/i, 'lift'],
+    [/^\s*(腹囲|waist)/i, 'waist'],
+  ];
+  const HK_LABEL = { weight: '体重', fat: '体脂肪率', active: '活動', basal: '安静時', steps: '歩数', lift: '筋トレ', waist: '腹囲' };
+  const HK_SUM = new Set(['active', 'basal', 'steps', 'lift']); // 日ごとに足す種類
+  function parseHkDate(s) {
+    const m = s.match(/(\d{4})\D{1,3}(\d{1,2})\D{1,3}(\d{1,2})/);
+    if (!m) {
+      // 英語表記（Sep 30, 2026 at 7:12 AM）のとき。先頭の種類の言葉は外す
+      const d = new Date(s.replace(/^\s*\S+\s+/, '').replace(/ at /, ' '));
+      return isNaN(d) ? null : { day: ymd(d), min: d.getHours() * 60 + d.getMinutes() };
+    }
+    const t = s.slice(m.index + m[0].length).match(/(\d{1,2}):(\d{2})/);
+    let min = 0;
+    if (t) {
+      let h = +t[1];
+      if (/午後|PM/i.test(s) && h < 12) h += 12;
+      if (/午前|AM/i.test(s) && h === 12) h = 0;
+      min = h * 60 + +t[2];
+    }
+    return { day: `${m[1]}-${pad(m[2])}-${pad(m[3])}`, min };
+  }
+  // ワークアウトの継続時間は「45:00」「1:02:03」「2700（秒）」などで届くので分にそろえる
+  function durationMin(s) {
+    const p = s.match(/\d+(?::\d+){1,2}/);
+    if (p) { const a = p[0].split(':').map(Number); return a.length === 3 ? a[0] * 60 + a[1] + a[2] / 60 : a[0] + a[1] / 60; }
+    const v = num(s.replace(/,/g, ''));
+    return /分|min/i.test(s) ? v : /時間|hr|hour/i.test(s) ? v * 60 : v > 300 ? v / 60 : v;
+  }
+  function importHealth(encoded) {
+    let text = encoded;
+    try { text = decodeURIComponent(encoded); } catch (e) {}
+    const agg = {};
+    text.split(/\r\n|\n|\r/).forEach((line) => {
+      const eq = line.lastIndexOf('=');
+      if (eq < 0) return;
+      const head = line.slice(0, eq), valText = line.slice(eq + 1).trim();
+      const type = (HK_TYPES.find(([re]) => re.test(head)) || [])[1];
+      const when = type && parseHkDate(head);
+      if (!when) return;
+      let v;
+      if (type === 'lift') v = durationMin(valText);
+      else { const m = valText.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/); if (!m) return; v = parseFloat(m[0]); }
+      if (!isFinite(v) || v < 0) return;
+      if (type === 'fat' && v > 0 && v <= 1) v *= 100; // 0.253 の形で来たとき
+      const d = (agg[when.day] ||= {});
+      if (HK_SUM.has(type)) d[type] = { v: (d[type] ? d[type].v : 0) + v };
+      else if (!d[type] || when.min < d[type].min) d[type] = { v, min: when.min }; // 1日に何回か測ったら朝いちばんの値
+    });
+    const days = Object.keys(agg);
+    if (!days.length) {
+      toast('取り込めるデータがありませんでした');
+      showView('body');
+      return;
+    }
+    const count = {};
+    days.forEach((day) => {
+      const b = (state.body[day] ||= {});
+      Object.entries(agg[day]).forEach(([k, o]) => {
+        b[k] = k === 'weight' ? Math.round(o.v * 100) / 100 : HK_SUM.has(k) && k !== 'lift' ? Math.round(o.v) : r1(o.v);
+        count[k] = (count[k] || 0) + 1;
+      });
+    });
+    state.bodyImportedAt = new Date().toISOString();
+    save();
+    showView('body');
+    toast(count.weight ? `体重 ${count.weight}日分などを取り込みました` : `${Object.keys(count).map((k) => HK_LABEL[k]).join('・')}を取り込みました`);
+  }
+  $('hkBtn').onclick = () => { location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(state.settings.readScName); };
+  $('hkGuideBtn').onclick = () => {
+    document.querySelectorAll('.gReadName').forEach((el) => (el.textContent = state.settings.readScName));
+    $('gHealthUrl').textContent = location.href.split('#')[0] + '#health=';
+    openSheet($('hkGuideSheet'));
+  };
+  $('closeHkGuide').onclick = closeSheet;
+
+  // ---------- からだの計算 ----------
+  const bodyOf = (day) => state.body[day] || {};
+  const G = {
+    weight: (b) => (b.weight > 0 ? b.weight : null),
+    fat: (b) => (b.fat > 0 ? b.fat : null),
+    lean: (b) => (b.weight > 0 && b.fat > 0 ? b.weight * (1 - b.fat / 100) : null),
+    muscle: (b) => (b.muscle > 0 ? b.muscle : null),
+    waist: (b) => (b.waist > 0 ? b.waist : null),
+  };
+  // day を含む直近 span 日の平均（毎日のぶれをならした「傾向」の値）
+  function avgOver(day, get, span = 7) {
+    let s = 0, n = 0;
+    for (let i = 0; i < span; i++) { const v = get(bodyOf(addDays(day, -i))); if (v != null) { s += v; n++; } }
+    return n ? { v: s / n, n } : null;
+  }
+  const trend = (day, get, span) => { const a = avgOver(day, get, span); return a ? a.v : null; };
+  function latestDay(get) {
+    const today = ymd(new Date());
+    return Object.keys(state.body).filter((d) => d <= today && get(state.body[d]) != null).sort().pop() || null;
+  }
+  // 直近 span 日の傾向の値から、1日あたりの変化（回帰直線の傾き）を出す
+  function slopePerDay(end, get, span = 21) {
+    const pts = [];
+    for (let i = span - 1; i >= 0; i--) { const v = trend(addDays(end, -i), get); if (v != null) pts.push([span - 1 - i, v]); }
+    if (pts.length < 10) return null;
+    const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const sxy = pts.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0), sxx = pts.reduce((a, p) => a + (p[0] - mx) ** 2, 0);
+    return sxx ? sxy / sxx : null;
+  }
+  const sign = (n, d = 1) => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n).toFixed(d);
+  const fmtDate = (s) => { const d = parseYmd(s); return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`; };
+  const dayKcal = (day) => state.entries.reduce((a, e) => a + (e.date === day ? e.kcal : 0), 0);
+  const mealCount = (day) => new Set(state.entries.filter((e) => e.date === day && e.meal !== 'お酒').map((e) => e.meal)).size;
+
+  // ---------- グラフ（SVG） ----------
+  function niceStep(x) {
+    const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+  }
+  function chartSVG(o) {
+    const n = o.days.length, W = 340, L = 34, R = 6, T = 8, PH = 130, SH = 28, MH = 7;
+    const all = [...(o.dots || []), ...(o.line || []), ...(o.target ? [o.target] : [])].filter((v) => v != null);
+    if (!all.length) return `<p class="empty">${o.empty}</p>`;
+    let lo = Math.min(...all), hi = Math.max(...all);
+    const pv = Math.max((hi - lo) * 0.1, o.minPad || 0.5);
+    const step = niceStep((hi - lo + pv * 2) / 4);
+    lo = Math.floor((lo - pv) / step) * step; hi = Math.ceil((hi + pv) / step) * step;
+    const X = (i) => L + (n <= 1 ? (W - L - R) / 2 : (i / (n - 1)) * (W - L - R));
+    const Y = (v) => T + (1 - (v - lo) / (hi - lo)) * PH;
+    let g = '';
+    for (let v = lo; v <= hi + step / 1000; v += step) {
+      g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e6e3dd"/><text x="${L - 4}" y="${Y(v) + 3}" text-anchor="end">${step < 1 ? v.toFixed(1) : Math.round(v)}</text>`;
+    }
+    if (o.target) {
+      g += `<line x1="${L}" x2="${W - R}" y1="${Y(o.target)}" y2="${Y(o.target)}" stroke="var(--ok)" stroke-dasharray="5 4"/>`
+        + `<text x="${W - R}" y="${Y(o.target) - 4}" text-anchor="end" style="fill:var(--ok)">目標 ${o.target}</text>`;
+    }
+    const r = n > 120 ? 1.4 : n > 45 ? 2 : 2.8;
+    (o.dots || []).forEach((v, i) => { if (v != null) g += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${r}" fill="#b9b4aa"/>`; });
+    if (o.line) {
+      let d = '';
+      o.line.forEach((v, i) => { if (v != null) d += (d ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); });
+      if (d) g += `<path d="${d}" fill="none" stroke="${o.lineColor || 'var(--accent)'}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    let y = T + PH;
+    if (o.bars) {
+      y += 10;
+      const max = Math.max(o.barLimit || 0, ...o.bars) || 1, bw = Math.max(1.2, ((W - L - R) / n) * 0.7);
+      g += `<text x="${L - 4}" y="${y + SH / 2 + 3}" text-anchor="end">お酒</text>`;
+      o.bars.forEach((v, i) => {
+        if (v > 0) { const h = Math.max(1.5, (v / max) * SH); g += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${(y + SH - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${v > o.barLimit ? 'var(--warn)' : 'var(--alc)'}"/>`; }
+      });
+      if (o.barLimit) { const yl = y + SH - (o.barLimit / max) * SH; g += `<line x1="${L}" x2="${W - R}" y1="${yl}" y2="${yl}" stroke="var(--alc)" stroke-dasharray="3 3" opacity=".5"/>`; }
+      y += SH;
+    }
+    if (o.marks) {
+      y += 6;
+      g += `<text x="${L - 4}" y="${y + MH - 1}" text-anchor="end">筋トレ</text>`;
+      o.marks.forEach((m, i) => { if (m) g += `<rect x="${(X(i) - 2.5).toFixed(1)}" y="${y}" width="5" height="${MH}" rx="2" fill="var(--lift)"/>`; });
+      y += MH;
+    }
+    const idx = n <= 1 ? [0] : [0, Math.round((n - 1) / 2), n - 1];
+    idx.forEach((i, k) => {
+      const d = parseYmd(o.days[i]);
+      g += `<text x="${X(i)}" y="${y + 14}" text-anchor="${idx.length === 1 ? 'middle' : k === 0 ? 'start' : k === idx.length - 1 ? 'end' : 'middle'}">${d.getMonth() + 1}/${d.getDate()}</text>`;
+    });
+    return `<svg class="chart2" viewBox="0 0 ${W} ${y + 18}" role="img" aria-label="${esc(o.label || '')}">${g}</svg>`;
+  }
+  const legend = (items) => `<div class="legend">${items.map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
+
+  // ---------- からだ画面 ----------
+  let bodyRange = 30;
+  $('rangeSeg').querySelectorAll('button').forEach((b) => (b.onclick = () => {
+    bodyRange = +b.dataset.r;
+    $('rangeSeg').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    renderBody();
+  }));
+
+  function tile(label, value, diff, cls) {
+    return `<div class="tile"><small>${label}</small><b>${value}</b><div class="d ${cls || ''}">${diff || '&nbsp;'}</div></div>`;
+  }
+
+  function renderBody() {
+    const s = state.settings, today = ymd(new Date());
+    // 取り込みの状態
+    const at = state.bodyImportedAt ? new Date(state.bodyImportedAt) : null;
+    $('hkText').textContent = at ? `ヘルスケアから最後に取り込んだのは ${at.getMonth() + 1}/${at.getDate()} ${hm(at)}` : 'まだヘルスケアから取り込んでいません。先に下の「取り込み用ショートカットの作り方」で準備してください。';
+
+    // 数字のまとめ
+    const last = latestDay(G.weight);
+    let tiles = '', verdict = '', vcls = '';
+    if (!last) {
+      tiles = tile('体重（7日平均）', '−', 'データなし') + tile('体脂肪率', '−') + tile('除脂肪体重', '−') + tile('目標まで', '−');
+      verdict = 'ヘルスケアから取り込むか、手で入れると、ここに体重の傾向が出ます。';
+    } else {
+      const w = trend(last, G.weight), w7 = trend(addDays(last, -7), G.weight);
+      const f = trend(last, G.fat), f28 = trend(addDays(last, -28), G.fat);
+      const l = trend(last, G.lean), l28 = trend(addDays(last, -28), G.lean);
+      const dw = w7 != null ? w - w7 : null, pct = dw != null ? (dw / w7) * 100 : null;
+      tiles += tile('体重（7日平均）', `${w.toFixed(1)}<small style="display:inline">kg</small>`,
+        dw != null ? `1週間で ${sign(dw)}kg（${sign(pct)}%）` : '1週間分たまると変化が出ます', dw == null ? '' : dw < 0 ? 'good' : dw > 0.2 ? 'bad' : '');
+      tiles += tile('体脂肪率', f != null ? `${f.toFixed(1)}<small style="display:inline">%</small>` : '−',
+        f != null && f28 != null ? `4週間で ${sign(f - f28)}ポイント` : '', f != null && f28 != null ? (f - f28 < 0 ? 'good' : f - f28 > 0.5 ? 'bad' : '') : '');
+      tiles += tile('除脂肪体重', l != null ? `${l.toFixed(1)}<small style="display:inline">kg</small>` : '−',
+        l != null && l28 != null ? `4週間で ${sign(l - l28)}kg` : '', l != null && l28 != null ? (l - l28 >= -0.3 ? 'good' : l - l28 < -0.8 ? 'bad' : '') : '');
+      if (s.targetWeight > 0) {
+        const rest = w - s.targetWeight, sl = slopePerDay(last, G.weight);
+        let when = '';
+        if (rest <= 0) when = '達成しています';
+        else if (sl != null && sl < -0.005) when = `このペースだと ${fmtDate(addDays(last, Math.ceil(rest / -sl)))}ごろ`;
+        else when = 'ペースが出ると到達日を予測します';
+        tiles += tile(`目標 ${s.targetWeight}kg まで`, rest > 0 ? `${rest.toFixed(1)}<small style="display:inline">kg</small>` : '達成', when, rest <= 0 ? 'good' : '');
+      } else tiles += tile('目標まで', '−', '設定画面で目標体重を入れます');
+
+      if (pct == null) verdict = '体重が1週間分たまると、減るペースを判定します。';
+      else if (-pct > 1.0) { verdict = `週 ${(-pct).toFixed(1)}% のペースで減っています。速めなので筋肉が落ちやすい状態です。食べる量を少し戻すか、タンパク質を増やしましょう。`; vcls = 'bad'; }
+      else if (-pct >= 0.25) { verdict = `週 ${(-pct).toFixed(1)}% のペースで減っています。筋肉を守りやすい範囲（0.5〜1%）${-pct < 0.5 ? 'より少しゆっくりです' : 'です'}。`; vcls = 'good'; }
+      else if (pct <= 0.25) verdict = '横ばいです。1〜2週間続くようなら、食べる量かお酒を見直す合図です。';
+      else { verdict = `週 ${pct.toFixed(1)}% のペースで増えています。`; vcls = 'bad'; }
+    }
+    $('bodyTiles').innerHTML = tiles;
+    $('bodyVerdict').textContent = verdict;
+    $('bodyVerdict').className = 'verdict ' + vcls;
+
+    // グラフの期間（データが少ないうちは、あるところから表示する）
+    const firstData = [Object.keys(state.body).sort()[0], state.entries.map((e) => e.date).sort()[0]].filter(Boolean).sort()[0] || today;
+    let start = addDays(today, -(bodyRange - 1));
+    if (firstData > start) start = firstData < addDays(today, -13) ? firstData : addDays(today, -13);
+    const days = [];
+    for (let d = start; d <= today; d = addDays(d, 1)) days.push(d);
+    const lift = days.map((d) => !!bodyOf(d).lift);
+
+    $('weightChart').innerHTML = chartSVG({
+      days, label: '体重の推移', empty: '体重のデータがまだありません',
+      dots: days.map((d) => G.weight(bodyOf(d))), line: days.map((d) => trend(d, G.weight)),
+      target: s.targetWeight > 0 ? s.targetWeight : null, bars: days.map(dayAlc), barLimit: s.alcMax, marks: lift, minPad: 0.5,
+    }) + legend([['#b9b4aa', '毎日の体重'], ['var(--accent)', '7日平均'], ['var(--alc)', 'お酒（上限超えは赤）'], ['var(--lift)', '筋トレ']]);
+
+    $('leanChart').innerHTML = chartSVG({
+      days, label: '除脂肪体重の推移', empty: '体脂肪率のデータがまだありません（体重 ×（1 − 体脂肪率）で出します）',
+      dots: days.map((d) => G.lean(bodyOf(d))), line: days.map((d) => trend(d, G.lean)), lineColor: 'var(--protein)', marks: lift, minPad: 0.4,
+    });
+    $('leanNote').textContent = leanNote();
+
+    // 手で入れた骨格筋率と腹囲は、2回以上あるときだけグラフにする
+    const extra = [['muscle', '骨格筋率（%）', 0.3], ['waist', '腹囲（cm）', 1]].filter(([k]) => days.filter((d) => G[k](bodyOf(d)) != null).length >= 2);
+    $('extraCharts').innerHTML = extra.map(([k, title, pad]) => {
+      const pts = days.map((d) => G[k](bodyOf(d)));
+      // 手入力の値は飛び飛びなので、平均せずに入れた点どうしを線でつなぐ
+      return `<h2 class="sec">${title}</h2><div class="card">${chartSVG({ days, label: title, dots: pts, line: pts, lineColor: 'var(--fat)', minPad: pad })}</div>`;
+    }).join('');
+
+    renderAlc();
+    renderEnergy();
+    renderPhotos();
+  }
+
+  // 直近14日のお酒の棒グラフ（点線が1日の上限）
+  function alcBars(days, limit) {
+    const W = 340, H = 124, L = 6, R = 6, T = 28, PH = 70;
+    const g = days.map(dayAlc), max = Math.max(limit * 1.25, ...g, 1);
+    const cw = (W - L - R) / days.length, Y = (v) => T + PH - (v / max) * PH;
+    let s = `<line x1="${L}" x2="${W - R}" y1="${Y(limit)}" y2="${Y(limit)}" stroke="var(--alc)" stroke-dasharray="4 3" opacity=".6"/>`
+      + `<text x="${W - R}" y="10" text-anchor="end" style="fill:var(--alc)">直近14日（g）　点線は上限 ${limit}g</text>`;
+    days.forEach((d, i) => {
+      const x = L + i * cw, v = g[i], dt = parseYmd(d);
+      if (v > 0) s += `<rect x="${(x + cw * 0.15).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(cw * 0.7).toFixed(1)}" height="${(T + PH - Y(v)).toFixed(1)}" rx="2" fill="${v > limit ? 'var(--warn)' : 'var(--alc)'}"/>`
+        + `<text x="${(x + cw / 2).toFixed(1)}" y="${(Y(v) - 3).toFixed(1)}" text-anchor="middle">${Math.round(v)}</text>`;
+      else s += `<text x="${(x + cw / 2).toFixed(1)}" y="${T + PH - 2}" text-anchor="middle" style="fill:var(--ok)">${hasFood(d) ? '0' : '−'}</text>`;
+      s += `<text x="${(x + cw / 2).toFixed(1)}" y="${T + PH + 14}" text-anchor="middle">${dt.getDate()}</text>`
+        + `<text x="${(x + cw / 2).toFixed(1)}" y="${T + PH + 26}" text-anchor="middle">${WEEK[dt.getDay()]}</text>`;
+    });
+    return `<svg class="chart2" viewBox="0 0 ${W} ${H}" role="img" aria-label="直近14日のお酒">${s}</svg>`;
+  }
+
+  function leanNote() {
+    const last = latestDay(G.lean);
+    if (!last) return '';
+    const w1 = trend(last, G.weight), f1 = trend(last, G.fat), w0 = trend(addDays(last, -28), G.weight), f0 = trend(addDays(last, -28), G.fat);
+    const base = '体組成計の体脂肪率は、体の水分でも上下します。1日ごとではなく、4週間くらいの幅で見てください。';
+    if (w0 == null || f0 == null) return base;
+    const dw = w1 - w0, dfat = (w1 * f1) / 100 - (w0 * f0) / 100, dlean = dw - dfat;
+    if (dw > -0.5) return `この4週間の体重の変化は ${sign(dw)}kg、脂肪 ${sign(dfat)}kg、脂肪以外 ${sign(dlean)}kg です。` + base;
+    const lossShare = dlean < 0 ? -dlean / -dw : 0;
+    return `この4週間で体重が ${(-dw).toFixed(1)}kg 減り、そのうち脂肪が約 ${sign(dfat)}kg、脂肪以外（筋肉・水分など）が約 ${sign(dlean)}kg です。`
+      + (lossShare > 0.35 ? '脂肪以外の減りが多めです。タンパク質と筋トレを優先し、減らすペースを少し落としましょう。' : '脂肪を中心に落とせています。')
+      + base;
+  }
+
+  function renderAlc() {
+    const s = state.settings, today = ymd(new Date());
+    const w = weekAlc(today);
+    const d28 = Array.from({ length: 28 }, (_, i) => addDays(today, -i));
+    const g28 = d28.map(dayAlc), logged28 = d28.filter(hasFood).length;
+    const drank = g28.filter((x) => x > 0).length, over = g28.filter((x) => x > s.alcMax).length;
+    const alcKcal = state.entries.filter((e) => e.alc > 0 && d28.includes(e.date)).reduce((a, e) => a + e.kcal, 0);
+    const d14 = d28.slice(0, 14).reverse();
+
+    // 飲んだ日と飲まない日で、翌朝の体重の動きを比べる
+    const up = { drank: [], free: [] };
+    for (let i = 1; i <= 90; i++) {
+      const d = addDays(today, -i), w0 = G.weight(bodyOf(d)), w1 = G.weight(bodyOf(addDays(d, 1)));
+      if (w0 == null || w1 == null) continue;
+      if (dayAlc(d) > 0) up.drank.push(w1 - w0); else if (hasFood(d)) up.free.push(w1 - w0);
+    }
+    const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+    const effect = up.drank.length >= 3 && up.free.length >= 3
+      ? `<p class="note">飲んだ日の翌朝は、飲まない日の翌朝と比べて、体重が平均 ${sign(mean(up.drank) - mean(up.free), 2)}kg 動いています（飲んだ日 ${up.drank.length}回、飲まない日 ${up.free.length}回の比較。水分の影響も含みます）。</p>`
+      : '<p class="note">飲んだ日と飲まない日がそれぞれ3回以上たまると、翌朝の体重への影響を比べて表示します。</p>';
+
+    $('alcCard').innerHTML = `
+      <div class="kv"><span>この週（月曜から）の合計</span><span>${Math.round(w.total)} g</span></div>
+      <div class="kv ${w.free >= s.alcFreeDays ? '' : 'hi'}"><span>この週の飲まない日</span><span>${w.free} / 目標 ${s.alcFreeDays} 日${w.blank ? `（記録なし ${w.blank}日）` : ''}</span></div>
+      <div class="kv"><span>直近4週間で飲んだ日</span><span>${drank} 日</span></div>
+      <div class="kv ${over ? 'hi' : ''}"><span>そのうち上限 ${s.alcMax}g を超えた日</span><span>${over} 日</span></div>
+      <div class="kv"><span>直近4週間の1日平均</span><span>${r1(g28.reduce((a, b) => a + b, 0) / 28)} g</span></div>
+      <div class="kv"><span>お酒のカロリー（1日平均）</span><span>${Math.round(alcKcal / 28)} kcal</span></div>
+      <div style="height:8px"></div>
+      ${alcBars(d14, s.alcMax)}
+      ${effect}
+      ${logged28 < 20 ? '<p class="note">何も記録していない日は、飲まない日に数えていません。食事を記録しない日も、飲まなかった日は何か1つ記録しておくと正確になります。</p>' : ''}`;
+  }
+
+  // 実測の消費カロリー：4週間の「食べた量」と「体重の傾向の変化」から逆算する（脂肪1kg ≒ 7200kcal）
+  function adaptiveTdee() {
+    const end = addDays(ymd(new Date()), -1), start = addDays(end, -27);
+    const days = Array.from({ length: 28 }, (_, i) => addDays(start, i));
+    const logged = days.filter((d) => mealCount(d) >= 2);
+    const a = avgOver(addDays(start, 6), G.weight), b = avgOver(end, G.weight);
+    if (logged.length < 14 || !a || !b || a.n < 3 || b.n < 3) return { logged: logged.length };
+    const intake = logged.reduce((x, d) => x + dayKcal(d), 0) / logged.length;
+    return { logged: logged.length, intake, tdee: intake - ((b.v - a.v) * 7200) / 21 };
+  }
+
+  function renderEnergy() {
+    const s = state.settings, today = ymd(new Date());
+    const d7 = Array.from({ length: 7 }, (_, i) => addDays(today, -(i + 1)));
+    const eat = d7.filter((d) => mealCount(d) >= 2), burn = d7.filter((d) => bodyOf(d).active > 0 && bodyOf(d).basal > 0);
+    const eatAvg = eat.length ? eat.reduce((a, d) => a + dayKcal(d), 0) / eat.length : null;
+    const burnAvg = burn.length ? burn.reduce((a, d) => a + bodyOf(d).active + bodyOf(d).basal, 0) / burn.length : null;
+    const ad = adaptiveTdee();
+    const lastW = latestDay(G.weight), w = lastW ? trend(lastW, G.weight) : null;
+    const lastL = latestDay(G.lean), lean = lastL ? trend(lastL, G.lean) : null;
+    const base = ad.tdee || burnAvg;
+    const goal = base && w ? Math.round((base - (w * s.pace / 100) * 7200 / 7) / 50) * 50 : null;
+    const protein = lean ? Math.round((lean * 1.8) / 5) * 5 : w ? Math.round((w * 1.4) / 5) * 5 : null;
+    const bal = eatAvg != null && burnAvg != null ? eatAvg - burnAvg : null;
+
+    $('energyCard').innerHTML = `
+      <div class="kv"><span>食べた量（直近7日の平均）</span><span>${eatAvg != null ? Math.round(eatAvg) + ' kcal' : '−'}</span></div>
+      <div class="kv"><span>消費（Apple Watch、直近7日の平均）</span><span>${burnAvg != null ? Math.round(burnAvg) + ' kcal' : '−'}</span></div>
+      ${bal != null ? `<div class="kv"><span>差し引き</span><span>1日 ${sign(bal, 0)} kcal（週 ${sign((bal * 7) / 7200, 2)}kg 相当）</span></div>` : ''}
+      <div class="kv"><span>実測の消費（体重の変化から逆算）</span><span>${ad.tdee ? Math.round(ad.tdee) + ' kcal' : `記録2週間分で表示（今 ${ad.logged}日）`}</span></div>
+      <div class="kv hi"><span>1日の目安（週 ${s.pace}% ペース）</span><span>${goal ? goal + ' kcal' : '−'}</span></div>
+      <div class="kv hi"><span>タンパク質の目安（${lean ? '除脂肪体重 × 1.8g' : '体重 × 1.4g'}）</span><span>${protein ? protein + ' g' : '−'}</span></div>
+      <p class="note">Apple Watchの消費カロリーは多めに出ることがあります。4週間分の記録がたまると、実際の体重の変化から逆算した「実測の消費」で目安を出します。朝昼夕のうち2回以上記録した日だけを使います。</p>
+      ${goal || protein ? `<div class="grid2">
+        <button class="btn ghost small" id="useGoalKcal" ${goal ? '' : 'disabled'}>カロリー目標にする</button>
+        <button class="btn ghost small" id="useGoalProtein" ${protein ? '' : 'disabled'}>タンパク質目標にする</button>
+      </div>` : ''}`;
+    if ($('useGoalKcal')) $('useGoalKcal').onclick = () => { s.goalKcal = goal; save(); toast(`カロリーの目標を ${goal} kcal にしました`); };
+    if ($('useGoalProtein')) $('useGoalProtein').onclick = () => { s.goalProtein = protein; save(); toast(`タンパク質の目標を ${protein} g にしました`); };
+  }
+
+  // ---------- からだの手入力 ----------
+  function fillBodySheet() {
+    const b = bodyOf($('bDate').value);
+    $('bWeight').value = b.weight || ''; $('bFat').value = b.fat || ''; $('bMuscle').value = b.muscle || ''; $('bWaist').value = b.waist || '';
+    $('bLift').checked = !!b.lift;
+  }
+  $('bodyInputBtn').onclick = () => { $('bDate').value = ymd(new Date()); fillBodySheet(); openSheet($('bodySheet')); };
+  $('bDate').onchange = fillBodySheet;
+  $('bSave').onclick = () => {
+    const day = $('bDate').value;
+    if (!day) return toast('日付を入れてください');
+    const b = (state.body[day] ||= {});
+    [['weight', 'bWeight'], ['fat', 'bFat'], ['muscle', 'bMuscle'], ['waist', 'bWaist']].forEach(([k, id]) => {
+      const v = num($(id).value);
+      if (v > 0) b[k] = v; else delete b[k];
+    });
+    b.lift = $('bLift').checked ? b.lift || true : false;
+    save(); closeSheet(); renderBody(); toast('保存しました');
+  };
+
+  // ---------- お腹の写真（IndexedDB。このiPhoneのSafariの中だけに保存し、どこにも送らない） ----------
+  const PDB = {
+    db: null,
+    open() {
+      if (!this.db) this.db = new Promise((res, rej) => {
+        const r = indexedDB.open('mealLog.photos', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      return this.db;
+    },
+    async run(mode, fn) {
+      const db = await this.open();
+      return new Promise((res, rej) => {
+        const t = db.transaction('photos', mode), req = fn(t.objectStore('photos'));
+        t.oncomplete = () => res(req && req.result);
+        t.onerror = t.onabort = () => rej(t.error);
+      });
+    },
+    all() { return this.run('readonly', (s) => s.getAll()); },
+    put(p) { return this.run('readwrite', (s) => s.put(p)); },
+    del(id) { return this.run('readwrite', (s) => s.delete(id)); },
+  };
+  const POSES = ['正面', '横'];
+  let photos = [];
+  const photoUrls = new Map();
+  const photoUrl = (p) => { if (!photoUrls.has(p.id)) photoUrls.set(p.id, URL.createObjectURL(p.blob)); return photoUrls.get(p.id); };
+  const photoLabel = (p) => { const d = parseYmd(p.date); return `${d.getMonth() + 1}/${d.getDate()} ${p.pose}`; };
+  async function loadPhotos() {
+    try { photos = (await PDB.all()).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)); } catch (e) { photos = []; }
+  }
+  function poseSeg(el, current, onPick) {
+    el.innerHTML = POSES.map((p) => `<button data-p="${p}" class="${p === current ? 'on' : ''}">${p}</button>`).join('');
+    el.querySelectorAll('button').forEach((b) => (b.onclick = () => {
+      el.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); onPick(b.dataset.p);
+    }));
+  }
+
+  function renderPhotos() {
+    const last = photos[photos.length - 1];
+    const gap = last ? Math.round((parseYmd(ymd(new Date())) - parseYmd(last.date)) / 86400000) : null;
+    $('photoNote').textContent = !last
+      ? '週1回、同じ曜日の朝、同じ場所・同じ距離で撮ると変化がよくわかります。写真はこのiPhoneの中だけに保存され、どこにも送られません。'
+      : gap >= 7 ? `前回の撮影から ${gap}日たちました。今日撮っておきましょう。` : `前回の撮影は ${gap === 0 ? '今日' : gap + '日前'}です。次は ${7 - gap}日後が目安です。`;
+    $('photoGrid').innerHTML = photos.slice().reverse().map((p) =>
+      `<button data-id="${p.id}"><img src="${photoUrl(p)}" alt="${esc(photoLabel(p))}" loading="lazy"><span>${esc(photoLabel(p))}</span></button>`).join('');
+    $('photoGrid').querySelectorAll('button').forEach((b) => (b.onclick = () => openPhoto(b.dataset.id)));
+  }
+
+  function bodyAt(day) {
+    const w = trend(day, G.weight), waist = avgOver(day, G.waist, 14);
+    return [w != null ? `体重（7日平均）${w.toFixed(1)}kg` : '', waist ? `腹囲 ${waist.v.toFixed(1)}cm` : ''].filter(Boolean).join('　');
+  }
+  let viewing = null;
+  function openPhoto(id) {
+    viewing = photos.find((p) => p.id === id);
+    if (!viewing) return;
+    $('pvTitle').textContent = `${dateLabel(viewing.date)} ${viewing.pose}`;
+    $('pvImg').src = photoUrl(viewing);
+    $('pvInfo').textContent = bodyAt(viewing.date);
+    openSheet($('photoSheet'));
+  }
+  $('pvClose').onclick = closeSheet;
+  $('pvDelete').onclick = async () => {
+    if (!viewing || !confirm('この写真を削除しますか？（元に戻せません）')) return;
+    await PDB.del(viewing.id);
+    URL.revokeObjectURL(photoUrls.get(viewing.id)); photoUrls.delete(viewing.id);
+    photos = photos.filter((p) => p !== viewing);
+    closeSheet(); renderPhotos(); toast('削除しました');
+  };
+
+  async function savePhoto(blob, date, pose) {
+    const p = { id: uid(), date, time: hm(new Date()), pose, blob };
+    try { await PDB.put(p); } catch (e) { return toast('写真を保存できませんでした'); }
+    photos.push(p);
+    photos.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    // 空き容量が少なくなってもSafariが消さないよう、保存の継続をお願いしておく
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    renderPhotos();
+    toast('写真を保存しました');
+  }
+  // 長い辺を1440pxまでに縮めてJPEGにする
+  function toJpeg(src, w, h, mirror) {
+    const k = Math.min(1, 1440 / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    const x = c.getContext('2d');
+    if (mirror) { x.translate(c.width, 0); x.scale(-1, 1); }
+    x.drawImage(src, 0, 0, c.width, c.height);
+    return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+  }
+
+  // カメラ：前回の同じ向きの写真を半透明で重ね、立ち位置と距離をそろえて撮る
+  let camStream = null, camFacing = 'user', camPose = '正面', camDelay = 10, camTick = null;
+  const CAM_DELAYS = [10, 3, 0];
+  function setGhost() {
+    const prev = photos.filter((p) => p.pose === camPose).pop();
+    $('camGhost').hidden = !prev;
+    if (prev) $('camGhost').src = photoUrl(prev);
+    $('camGhost').style.opacity = $('camGhostOp').value / 100;
+  }
+  function stopStream() { if (camStream) camStream.getTracks().forEach((t) => t.stop()); camStream = null; }
+  async function startStream() {
+    stopStream();
+    $('camMsg').hidden = true;
+    $('camVideo').classList.toggle('mirror', camFacing === 'user');
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camFacing, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false });
+      $('camVideo').srcObject = camStream;
+      await $('camVideo').play().catch(() => {});
+    } catch (e) {
+      $('camMsg').hidden = false;
+      $('camMsg').textContent = 'カメラを使えませんでした。Safariにカメラの使用を許可するか、「写真から選ぶ」を使ってください。';
+    }
+  }
+  function cancelCount() { clearTimeout(camTick); camTick = null; $('camCount').textContent = ''; }
+  $('camOpen').onclick = () => {
+    $('cam').hidden = false;
+    document.body.style.overflow = 'hidden';
+    poseSeg($('camPose'), camPose, (p) => { camPose = p; setGhost(); });
+    $('camTimer').textContent = camDelay ? `タイマー ${camDelay}秒` : 'タイマーなし';
+    setGhost();
+    startStream();
+  };
+  function closeCam() { cancelCount(); stopStream(); $('cam').hidden = true; document.body.style.overflow = ''; }
+  $('camClose').onclick = closeCam;
+  $('camFlip').onclick = () => { camFacing = camFacing === 'user' ? 'environment' : 'user'; startStream(); };
+  $('camTimer').onclick = () => {
+    camDelay = CAM_DELAYS[(CAM_DELAYS.indexOf(camDelay) + 1) % CAM_DELAYS.length];
+    $('camTimer').textContent = camDelay ? `タイマー ${camDelay}秒` : 'タイマーなし';
+  };
+  $('camGhostOp').oninput = () => ($('camGhost').style.opacity = $('camGhostOp').value / 100);
+  $('camShot').onclick = () => {
+    if (camTick) return cancelCount(); // カウント中にもう一度押すと取り消し
+    const v = $('camVideo');
+    if (!v.videoWidth) return toast('カメラの準備ができていません');
+    let left = camDelay;
+    const tick = async () => {
+      if (left > 0) { $('camCount').textContent = left--; camTick = setTimeout(tick, 1000); return; }
+      camTick = null; $('camCount').textContent = '';
+      const blob = await toJpeg(v, v.videoWidth, v.videoHeight, camFacing === 'user');
+      if (!blob) return toast('撮影できませんでした');
+      closeCam();
+      savePhoto(blob, ymd(new Date()), camPose);
+    };
+    tick();
+  };
+  $('camLib').onclick = () => $('photoFile').click();
+  $('photoFile').onchange = async () => {
+    const file = $('photoFile').files[0];
+    $('photoFile').value = '';
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+      const blob = await toJpeg(img, img.naturalWidth, img.naturalHeight, false);
+      closeCam();
+      // 撮った日が分かればその日付で保存する
+      savePhoto(blob, ymd(new Date(file.lastModified || Date.now())), camPose);
+    } catch (e) { toast('この写真は読み込めませんでした'); }
+    URL.revokeObjectURL(url);
+  };
+
+  // 比べる
+  let cmpPose = '正面', cmpMode = 'side';
+  function fillCmp() {
+    const list = photos.filter((p) => p.pose === cmpPose);
+    const opts = list.map((p) => `<option value="${p.id}">${esc(dateLabel(p.date))}</option>`).join('');
+    $('cmpA').innerHTML = opts; $('cmpB').innerHTML = opts;
+    if (list.length) { $('cmpA').value = list[0].id; $('cmpB').value = list[list.length - 1].id; }
+    renderCmp();
+  }
+  function renderCmp() {
+    const a = photos.find((p) => p.id === $('cmpA').value), b = photos.find((p) => p.id === $('cmpB').value);
+    if (!a || !b || a === b) {
+      $('cmpView').innerHTML = `<p class="empty">比べるには「${cmpPose}」の写真が2枚以上必要です。</p>`;
+      return;
+    }
+    const wa = trend(a.date, G.weight), wb = trend(b.date, G.weight);
+    const xa = avgOver(a.date, G.waist, 14), xb = avgOver(b.date, G.waist, 14);
+    const days = Math.round((parseYmd(b.date) - parseYmd(a.date)) / 86400000);
+    const diff = [`${days}日間`, wa != null && wb != null ? `体重 ${sign(wb - wa)}kg` : '', xa && xb ? `腹囲 ${sign(xb.v - xa.v)}cm` : ''].filter(Boolean).join('　');
+    $('cmpView').innerHTML = `<div class="cmpdiff">${diff}</div>` + (cmpMode === 'side'
+      ? `<div class="cmp"><figure><img src="${photoUrl(a)}" alt=""><figcaption>${esc(photoLabel(a))}</figcaption></figure>
+         <figure><img src="${photoUrl(b)}" alt=""><figcaption>${esc(photoLabel(b))}</figcaption></figure></div>`
+      : `<div class="overlaycmp"><img src="${photoUrl(a)}" alt=""><img src="${photoUrl(b)}" alt="" id="cmpTop" style="opacity:.5"></div>
+         <div class="stepper" style="margin-top:10px"><small>${esc(photoLabel(a))}</small><input type="range" id="cmpRange" min="0" max="100" value="50" style="flex:1;accent-color:var(--accent)"><small>${esc(photoLabel(b))}</small></div>`);
+    if ($('cmpRange')) $('cmpRange').oninput = () => ($('cmpTop').style.opacity = $('cmpRange').value / 100);
+  }
+  $('cmpOpen').onclick = () => {
+    if (photos.filter((p) => p.pose === '横').length >= 2 && photos.filter((p) => p.pose === '正面').length < 2) cmpPose = '横';
+    poseSeg($('cmpPose'), cmpPose, (p) => { cmpPose = p; fillCmp(); });
+    fillCmp();
+    openSheet($('cmpSheet'));
+  };
+  $('cmpA').onchange = renderCmp;
+  $('cmpB').onchange = renderCmp;
+  $('cmpMode').querySelectorAll('button').forEach((b) => (b.onclick = () => {
+    cmpMode = b.dataset.m;
+    $('cmpMode').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    renderCmp();
+  }));
+  $('cmpClose').onclick = closeSheet;
+
   // ---------- 推移 ----------
   function renderHistory() {
     const s = state.settings;
@@ -1027,11 +1956,11 @@
       <div><small>糖質</small><b>${r1(avg('sugar'))}</b><small>/ ${s.goalSugar} g</small></div>
       <div><small>脂質</small><b>${r1(avg('fat'))}</b><small>/ ${s.goalFat} g</small></div>`;
 
-    $('daysTable').innerHTML = `<tr><th>日付</th><th>kcal</th><th>タンパク</th><th>糖質</th><th>脂質</th></tr>` +
+    $('daysTable').innerHTML = `<tr><th>日付</th><th>kcal</th><th>タンパク</th><th>糖質</th><th>脂質</th><th>酒g</th></tr>` +
       byDay.slice().reverse().filter((x) => x.list.length).map((x) => {
         const d = parseYmd(x.day);
         return `<tr><td>${d.getMonth() + 1}/${d.getDate()}（${WEEK[d.getDay()]}）</td>
-          <td>${Math.round(x.t.kcal)}</td><td>${r1(x.t.protein)}</td><td>${r1(x.t.sugar)}</td><td>${r1(x.t.fat)}</td></tr>`;
+          <td>${Math.round(x.t.kcal)}</td><td>${r1(x.t.protein)}</td><td>${r1(x.t.sugar)}</td><td>${r1(x.t.fat)}</td><td>${x.t.alc ? Math.round(x.t.alc) : '−'}</td></tr>`;
       }).join('');
   }
 
@@ -1040,6 +1969,11 @@
     const s = state.settings;
     $('goalKcal').value = s.goalKcal; $('goalSugar').value = s.goalSugar; $('goalFat').value = s.goalFat; $('goalProtein').value = s.goalProtein;
     $('scName').value = s.scName; $('autoSync').checked = s.autoSync;
+    $('readScName').value = s.readScName;
+    $('targetWeight').value = s.targetWeight || ''; $('pace').value = s.pace;
+    $('alcMax').value = s.alcMax; $('alcFreeDays').value = s.alcFreeDays;
+    const bk = state.backupAt ? new Date(state.backupAt) : null;
+    $('lastBackup').textContent = bk ? `最後に書き出したのは ${bk.getMonth() + 1}/${bk.getDate()} ${hm(bk)}` : 'まだ一度も書き出していません。';
     $('myFoods').innerHTML = `<button class="btn ghost block" id="addFoodBtn" style="margin-bottom:8px">＋ 食品を追加・記録する</button>` +
       (state.foods.map((f) => `
       <div class="myfood"><span>${esc(f.name)}<small>${esc(f.unit || '')}　${Math.round(f.kcal)}kcal　${macroText(f)}</small></span>
@@ -1056,15 +1990,28 @@
   });
   $('scName').onchange = () => { state.settings.scName = $('scName').value.trim() || DEFAULT_SETTINGS.scName; save(); renderSettings(); };
   $('autoSync').onchange = () => { state.settings.autoSync = $('autoSync').checked; save(); };
+  $('readScName').onchange = () => { state.settings.readScName = $('readScName').value.trim() || DEFAULT_SETTINGS.readScName; save(); renderSettings(); };
+  $('targetWeight').onchange = () => { state.settings.targetWeight = Math.max(0, r1(num($('targetWeight').value))); save(); };
+  $('pace').onchange = () => { state.settings.pace = Math.min(1.5, Math.max(0.1, r1(num($('pace').value)) || DEFAULT_SETTINGS.pace)); save(); renderSettings(); };
+  $('alcMax').onchange = () => { state.settings.alcMax = Math.max(0, Math.round(num($('alcMax').value))); save(); };
+  $('alcFreeDays').onchange = () => { state.settings.alcFreeDays = Math.min(7, Math.max(0, Math.round(num($('alcFreeDays').value)))); save(); renderSettings(); };
   $('showGuide').onclick = () => { $('gName').textContent = state.settings.scName; openSheet($('guideSheet')); };
   $('closeGuide').onclick = closeSheet;
 
-  $('exportBtn').onclick = () => {
-    const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });
+  function download(obj, name) {
+    const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `食事記録_${ymd(new Date())}.json`;
+    a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    state.backupAt = new Date().toISOString(); save(); renderSettings();
+  }
+  const blobToDataUrl = (b) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+  $('exportBtn').onclick = () => download(state, `ダイエット記録_${ymd(new Date())}.json`);
+  $('exportAllBtn').onclick = async () => {
+    toast('写真をまとめています');
+    const list = await Promise.all(photos.map(async (p) => ({ id: p.id, date: p.date, time: p.time, pose: p.pose, data: await blobToDataUrl(p.blob) })));
+    download({ ...state, photos: list }, `ダイエット記録_写真つき_${ymd(new Date())}.json`);
   };
   $('importBtn').onclick = () => $('importFile').click();
   $('importFile').onchange = async () => {
@@ -1072,24 +2019,39 @@
     try {
       const data = JSON.parse(await file.text());
       if (!Array.isArray(data.entries)) throw new Error();
-      if (!confirm(`記録 ${data.entries.length} 件を読み込みます。今の内容は置き換わります。よろしいですか？`)) return;
-      state = { entries: data.entries, foods: data.foods || [], imported: data.imported || [], settings: { ...DEFAULT_SETTINGS, ...data.settings } };
-      save(); renderSettings(); renderLog(); toast('読み込みました');
+      const np = Array.isArray(data.photos) ? data.photos.length : 0;
+      if (!confirm(`記録 ${data.entries.length} 件${np ? `と写真 ${np} 枚` : ''}を読み込みます。記録は今の内容と置き換わります（写真は今ある分に追加します）。よろしいですか？`)) return;
+      const { photos: plist, ...rest } = data;
+      const backupAt = state.backupAt;
+      state = normalizeState(rest); state.home = true; state.backupAt = backupAt || state.backupAt;
+      save();
+      if (np) {
+        const have = new Set((await PDB.all()).map((p) => p.id));
+        for (const p of plist) {
+          if (have.has(p.id) || !p.data) continue;
+          await PDB.put({ id: p.id, date: p.date, time: p.time, pose: p.pose, blob: await (await fetch(p.data)).blob() });
+        }
+        await loadPhotos();
+      }
+      renderSettings(); renderLog(); toast('読み込みました');
     } catch (e) { toast('このファイルは読み込めません'); }
     $('importFile').value = '';
   };
 
   // ---------- タブ ----------
-  document.querySelectorAll('nav.tabs button').forEach((b) => (b.onclick = () => {
-    document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.toggle('on', x === b));
-    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === 'view-' + b.dataset.view));
-    const v = b.dataset.view;
+  function showView(v) {
+    closeSheet();
+    document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.toggle('on', x.dataset.view === v));
+    document.querySelectorAll('.view').forEach((el) => el.classList.toggle('on', el.id === 'view-' + v));
     $('fab').hidden = v !== 'log';
     document.querySelector('header.top').hidden = v !== 'log';
+    if (v === 'log') renderLog();
+    if (v === 'body') renderBody();
     if (v === 'history') renderHistory();
     if (v === 'settings') renderSettings();
     window.scrollTo(0, 0);
-  }));
+  }
+  document.querySelectorAll('nav.tabs button').forEach((b) => (b.onclick = () => showView(b.dataset.view)));
 
   // ショートカットから戻ったとき、ハッシュ変更イベントが来ない場合に備える
   document.addEventListener('visibilitychange', () => {
@@ -1125,6 +2087,7 @@
 
   renderLog();
   handleHash();
+  loadPhotos().then(() => { if ($('view-body').classList.contains('on')) renderPhotos(); });
 })();
 </script>
 </body>
