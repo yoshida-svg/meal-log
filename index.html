@@ -229,6 +229,7 @@
   .overlaycmp img { width: 100%; display: block; }
   .overlaycmp img + img { position: absolute; inset: 0; height: 100%; object-fit: cover; }
   .cmpdiff { background: var(--surface); border-radius: 12px; padding: 10px 14px; margin: 10px 0; font-size: 16px; }
+  .linecmp canvas { width: 100%; display: block; border-radius: 10px; background: #fff; }
 </style>
 </head>
 <body>
@@ -296,6 +297,8 @@
     <button class="btn ghost" id="cmpOpen">比べる</button>
   </div>
   <div class="photos" id="photoGrid"></div>
+  <p class="note" id="anaStatus" hidden></p>
+  <div id="bellyCharts"></div>
   <input type="file" id="photoFile" accept="image/*" hidden>
 
   <div style="height:14px"></div>
@@ -615,7 +618,8 @@
       <div class="field"><label>後</label><select id="cmpB"></select></div>
     </div>
     <div class="seg" id="cmpMode">
-      <button data-m="side" class="on">並べる</button>
+      <button data-m="line" class="on">輪郭</button>
+      <button data-m="side">並べる</button>
       <button data-m="over">重ねる</button>
     </div>
     <div id="cmpView"></div>
@@ -638,6 +642,7 @@
     </div>
   </div>
   <div class="bar2">
+    <div class="row" id="camTip" style="font-size:14px;justify-content:center;text-align:center"></div>
     <div class="row"><span style="font-size:14px">前回の写真</span><input type="range" id="camGhostOp" min="0" max="80" value="35"></div>
     <div class="row">
       <div class="seg" id="camPose" style="flex:1"></div>
@@ -1778,6 +1783,8 @@
     $('photoGrid').innerHTML = photos.slice().reverse().map((p) =>
       `<button data-id="${p.id}"><img src="${photoUrl(p)}" alt="${esc(photoLabel(p))}" loading="lazy"><span>${esc(photoLabel(p))}</span></button>`).join('');
     $('photoGrid').querySelectorAll('button').forEach((b) => (b.onclick = () => openPhoto(b.dataset.id)));
+    renderBellyCharts();
+    analyzePending();
   }
 
   function bodyAt(day) {
@@ -1790,7 +1797,9 @@
     if (!viewing) return;
     $('pvTitle').textContent = `${dateLabel(viewing.date)} ${viewing.pose}`;
     $('pvImg').src = photoUrl(viewing);
-    $('pvInfo').textContent = bodyAt(viewing.date);
+    const bv = bellyValue(viewing);
+    $('pvInfo').textContent = [bodyAt(viewing.date),
+      bv != null ? `${BELLY[viewing.pose].short} ${bv.toFixed(1)}` : viewing.ana && viewing.ana.fail ? `解析できませんでした（${viewing.ana.fail}）` : ''].filter(Boolean).join('　');
     openSheet($('photoSheet'));
   }
   $('pvClose').onclick = closeSheet;
@@ -1810,7 +1819,7 @@
     // 空き容量が少なくなってもSafariが消さないよう、保存の継続をお願いしておく
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     renderPhotos();
-    toast('写真を保存しました');
+    toast('写真を保存しました。お腹の数字を解析します');
   }
   // 長い辺を1440pxまでに縮めてJPEGにする
   function toJpeg(src, w, h, mirror) {
@@ -1823,10 +1832,190 @@
     return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
   }
 
+  // ---------- 写真の解析（MediaPipe。Safariの中で動き、写真は外に送らない） ----------
+  // 体の輪郭（人物の切り抜き）と、肩・腰の位置を見つけて、お腹の大きさを数字にする。
+  //   正面：お腹の幅 ÷ 胴の長さ（肩の中心から腰の中心まで）
+  //   横　：お腹の厚み ÷ 胴の長さ
+  // 胴の長さとの比率なので、カメラとの距離が少し違っても比べられる。
+  // 肩幅は腕を頭の後ろで組むと動きやすいので、ものさしには使わない。
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task';
+  const ANA_VER = 3;
+  const BELLY = {
+    '正面': { label: 'お腹の幅（胴の長さに対して）', short: 'お腹の幅' },
+    '横': { label: 'お腹の厚み（胴の長さに対して）', short: 'お腹の厚み' },
+  };
+  let poseP = null;
+  function loadPose() {
+    if (!poseP) poseP = (async () => {
+      const v = await import(`${MP}/vision_bundle.mjs`);
+      const files = await v.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      return v.PoseLandmarker.createFromOptions(files, {
+        baseOptions: { modelAssetPath: POSE_MODEL, delegate: 'CPU' },
+        runningMode: 'IMAGE', numPoses: 1, outputSegmentationMasks: true,
+      });
+    })().catch((e) => { poseP = null; throw e; });
+    return poseP;
+  }
+  // 写真1枚を解析して、数字と輪郭用の情報を返す
+  async function detectBody(blob) {
+    const bmp = await createImageBitmap(blob);
+    const k = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close && bmp.close();
+    const pose = await loadPose();
+    const r = pose.detect(c);
+    if (!r.landmarks || !r.landmarks.length || !r.segmentationMasks || !r.segmentationMasks.length) return { canvas: c, fail: '人が見つかりませんでした' };
+    const mk = r.segmentationMasks[0];
+    const mw = mk.width, mh = mk.height, m = mk.getAsFloat32Array().slice();
+    mk.close && mk.close();
+    const L = r.landmarks[0];
+    const P = (i) => ({ x: L[i].x * c.width, y: L[i].y * c.height, v: L[i].visibility == null ? 1 : L[i].visibility });
+    const ls = P(11), rs = P(12), lh = P(23), rh = P(24);
+    const sm = { x: (ls.x + rs.x) / 2, y: (ls.y + rs.y) / 2 }, hm = { x: (lh.x + rh.x) / 2, y: (lh.y + rh.y) / 2 };
+    const inside = (x, y) => {
+      const mx = Math.round((x / c.width) * mw), my = Math.round((y / c.height) * mh);
+      return mx >= 0 && my >= 0 && mx < mw && my < mh && m[my * mw + mx] > 0.5;
+    };
+    return { canvas: c, mask: { w: mw, h: mh, m }, sm, hm, ls, rs, lh, rh, inside };
+  }
+  // 胴の下半分（肩と腰の中間から、腰の関節の少し上まで）で、いちばん大きいところを測る。
+  // 腰の関節の高さまで下げると、脚の付け根やおしりの張りを拾ってしまう
+  function measureBelly(d) {
+    if (d.fail) return { fail: d.fail };
+    if (Math.min(d.lh.v, d.rh.v) < 0.3 && Math.max(d.lh.v, d.rh.v) < 0.5) return { fail: '腰まで写っていません' };
+    const torso = Math.hypot(d.hm.x - d.sm.x, d.hm.y - d.sm.y);
+    if (torso < 40) return { fail: '体が小さく写りすぎています' };
+    let best = 0, bestT = 0;
+    for (let t = 0.5; t <= 0.9; t += 0.01) {
+      const cx = d.sm.x + (d.hm.x - d.sm.x) * t, y = d.sm.y + (d.hm.y - d.sm.y) * t;
+      if (!d.inside(cx, y)) continue;
+      let l = cx, r = cx;
+      while (d.inside(l - 1, y)) l--;
+      while (d.inside(r + 1, y)) r++;
+      if (r - l > best) { best = r - l; bestT = t; }
+    }
+    if (!best) return { fail: '胴の輪郭が取れませんでした' };
+    return { ana: ANA_VER, front: best, torso, shoulder: Math.hypot(d.ls.x - d.rs.x, d.ls.y - d.rs.y), at: bestT };
+  }
+  const bellyValue = (p) => {
+    const a = p.ana;
+    if (!a || a.fail) return null;
+    return (a.front / a.torso) * 100;
+  };
+
+  // まだ解析していない写真を、1枚ずつ順番に解析して保存する
+  let analyzing = false;
+  async function analyzePending() {
+    if (analyzing) return;
+    // 解析のやり方を変えたら（ANA_VER を上げたら）、失敗した写真も含めて全部やり直す
+    const pending = () => photos.filter((p) => !p.ana || p.ana.ana !== ANA_VER);
+    if (!pending().length) return;
+    analyzing = true;
+    try {
+      // 解析中に撮った写真も拾えるよう、残りがなくなるまで繰り返す
+      for (let todo = pending(); todo.length; todo = pending()) {
+        const p = todo[0];
+        $('anaStatus').hidden = false;
+        $('anaStatus').textContent = !poseP ? '写真を解析する準備をしています（初回は少し時間がかかります）' : `写真を解析しています（残り ${todo.length}枚）`;
+        await loadPose(); // 部品が読み込めないときは、写真を「失敗」にせず次の機会にやり直す
+        try { p.ana = { ...measureBelly(await detectBody(p.blob)), ana: ANA_VER }; } catch (e) { p.ana = { fail: '解析できませんでした', ana: ANA_VER }; console.warn(e); }
+        await PDB.put(p).catch(() => {});
+      }
+      $('anaStatus').hidden = true;
+    } catch (e) {
+      $('anaStatus').textContent = '解析の準備ができませんでした。電波のよいところで、からだ画面を開き直してください。';
+    }
+    analyzing = false;
+    renderBellyCharts();
+  }
+
+  // お腹の数字のグラフ（正面・横それぞれ）
+  function renderBellyCharts() {
+    const today = ymd(new Date());
+    $('bellyCharts').innerHTML = POSES.map((pose) => {
+      const list = photos.filter((p) => p.pose === pose && bellyValue(p) != null);
+      if (!list.length) return '';
+      let start = list[0].date;
+      if (start > addDays(today, -13)) start = addDays(today, -13);
+      const days = [];
+      for (let d = start; d <= today; d = addDays(d, 1)) days.push(d);
+      const byDay = {};
+      list.forEach((p) => (byDay[p.date] = bellyValue(p)));
+      const pts = days.map((d) => (byDay[d] != null ? byDay[d] : null));
+      const first = bellyValue(list[0]), last = bellyValue(list[list.length - 1]);
+      const diff = list.length > 1 ? `最初の写真から ${sign(last - first)}ポイント（${sign(((last - first) / first) * 100)}%）` : '2枚目から変化を表示します';
+      return `<h2 class="sec">${BELLY[pose].label}</h2><div class="card">
+        <div class="kv hi"><span>最新（${esc(photoLabel(list[list.length - 1]))}）</span><span>${last.toFixed(1)}</span></div>
+        <p class="note" style="margin:4px 0 8px">${diff}。数字が小さくなるほど、お腹が引っ込んでいます。</p>
+        ${chartSVG({ days, label: BELLY[pose].label, dots: pts, line: pts, lineColor: 'var(--accent)', minPad: 1 })}
+      </div>`;
+    }).join('') + (photos.some((p) => bellyValue(p) != null)
+      ? '<p class="note">写真の数字は、姿勢・息の吸い方・服・光で数%ぶれます。1回ごとではなく、何週間かの流れで見てください。毎回、両腕を頭の後ろで組み、軽く息を吐いたところで撮るとそろいます。</p>' : '');
+  }
+
+  // 2枚の写真の輪郭を、肩と腰の位置で合わせて重ねる（前＝青、後＝赤）
+  function edgeCanvas(d, color) {
+    const { w, h, m } = d.mask;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const x = c.getContext('2d'), img = x.createImageData(w, h);
+    const [R, G2, B] = color;
+    const on = (i, j) => i >= 0 && j >= 0 && i < w && j < h && m[j * w + i] > 0.5;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      if (!on(i, j)) continue;
+      if (on(i - 1, j) && on(i + 1, j) && on(i, j - 1) && on(i, j + 1)) continue;
+      // 線を太くするため、まわりの点も塗る
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const a = i + di, b = j + dj;
+        if (a < 0 || b < 0 || a >= w || b >= h) continue;
+        const k = (b * w + a) * 4;
+        img.data[k] = R; img.data[k + 1] = G2; img.data[k + 2] = B; img.data[k + 3] = 255;
+      }
+    }
+    x.putImageData(img, 0, 0);
+    return c;
+  }
+  async function drawOutlines(a, b, el) {
+    el.innerHTML = '<p class="note">輪郭を取り出しています…</p>';
+    let da, db;
+    try { [da, db] = [await detectBody(a.blob), await detectBody(b.blob)]; }
+    catch (e) { el.innerHTML = '<p class="empty">解析の準備ができませんでした。電波のよいところでもう一度開いてください。</p>'; return; }
+    if (da.fail || db.fail) { el.innerHTML = `<p class="empty">${esc(da.fail || db.fail)}。肩から腰まで写った写真で比べてください。</p>`; return; }
+    const W = db.canvas.width, H = db.canvas.height;
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const x = out.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+    x.globalAlpha = 0.18; x.filter = 'grayscale(1)'; x.drawImage(db.canvas, 0, 0); x.globalAlpha = 1; x.filter = 'none';
+    // 前の写真の「肩の中心→腰の中心」を、後の写真の同じ線にぴったり合わせる
+    const va = { x: da.hm.x - da.sm.x, y: da.hm.y - da.sm.y }, vb = { x: db.hm.x - db.sm.x, y: db.hm.y - db.sm.y };
+    const s = Math.hypot(vb.x, vb.y) / Math.hypot(va.x, va.y), th = Math.atan2(vb.y, vb.x) - Math.atan2(va.y, va.x);
+    x.save();
+    x.translate(db.sm.x, db.sm.y); x.rotate(th); x.scale(s, s); x.translate(-da.sm.x, -da.sm.y);
+    x.scale(da.canvas.width / da.mask.w, da.canvas.height / da.mask.h);
+    x.drawImage(edgeCanvas(da, [74, 111, 165]), 0, 0);
+    x.restore();
+    x.save();
+    x.scale(W / db.mask.w, H / db.mask.h);
+    x.drawImage(edgeCanvas(db, [194, 86, 46]), 0, 0);
+    x.restore();
+    el.innerHTML = '';
+    el.className = 'linecmp';
+    el.appendChild(out);
+    el.insertAdjacentHTML('beforeend', legend([['#4a6fa5', `前 ${esc(photoLabel(a))}`], ['#c2562e', `後 ${esc(photoLabel(b))}`]])
+      + '<p class="note">肩と腰の位置で2枚の大きさと傾きをそろえています。赤い線が青い線より内側にあれば、その分お腹が引っ込んでいます。</p>');
+  }
+
   // カメラ：前回の同じ向きの写真を半透明で重ね、立ち位置と距離をそろえて撮る
   let camStream = null, camFacing = 'user', camPose = '正面', camDelay = 10, camTick = null;
   const CAM_DELAYS = [10, 3, 0];
   function setGhost() {
+    $('camTip').textContent = camPose === '正面'
+      ? '両腕を頭の後ろで組み、肩から腰の下まで入れる。軽く息を吐いたところで'
+      : '真横を向き、両腕を頭の後ろで組む。肩から腰の下まで入れる';
     const prev = photos.filter((p) => p.pose === camPose).pop();
     $('camGhost').hidden = !prev;
     if (prev) $('camGhost').src = photoUrl(prev);
@@ -1896,7 +2085,7 @@
   };
 
   // 比べる
-  let cmpPose = '正面', cmpMode = 'side';
+  let cmpPose = '正面', cmpMode = 'line';
   function fillCmp() {
     const list = photos.filter((p) => p.pose === cmpPose);
     const opts = list.map((p) => `<option value="${p.id}">${esc(dateLabel(p.date))}</option>`).join('');
@@ -1913,7 +2102,14 @@
     const wa = trend(a.date, G.weight), wb = trend(b.date, G.weight);
     const xa = avgOver(a.date, G.waist, 14), xb = avgOver(b.date, G.waist, 14);
     const days = Math.round((parseYmd(b.date) - parseYmd(a.date)) / 86400000);
-    const diff = [`${days}日間`, wa != null && wb != null ? `体重 ${sign(wb - wa)}kg` : '', xa && xb ? `腹囲 ${sign(xb.v - xa.v)}cm` : ''].filter(Boolean).join('　');
+    const ba = bellyValue(a), bb = bellyValue(b);
+    const diff = [`${days}日間`, wa != null && wb != null ? `体重 ${sign(wb - wa)}kg` : '', xa && xb ? `腹囲 ${sign(xb.v - xa.v)}cm` : '',
+      ba != null && bb != null ? `${BELLY[cmpPose].short} ${sign(bb - ba)}ポイント` : ''].filter(Boolean).join('　');
+    if (cmpMode === 'line') {
+      $('cmpView').innerHTML = `<div class="cmpdiff">${diff}</div><div id="lineView"></div>`;
+      drawOutlines(a, b, $('lineView'));
+      return;
+    }
     $('cmpView').innerHTML = `<div class="cmpdiff">${diff}</div>` + (cmpMode === 'side'
       ? `<div class="cmp"><figure><img src="${photoUrl(a)}" alt=""><figcaption>${esc(photoLabel(a))}</figcaption></figure>
          <figure><img src="${photoUrl(b)}" alt=""><figcaption>${esc(photoLabel(b))}</figcaption></figure></div>`
@@ -2010,7 +2206,7 @@
   $('exportBtn').onclick = () => download(state, `ダイエット記録_${ymd(new Date())}.json`);
   $('exportAllBtn').onclick = async () => {
     toast('写真をまとめています');
-    const list = await Promise.all(photos.map(async (p) => ({ id: p.id, date: p.date, time: p.time, pose: p.pose, data: await blobToDataUrl(p.blob) })));
+    const list = await Promise.all(photos.map(async (p) => ({ id: p.id, date: p.date, time: p.time, pose: p.pose, ana: p.ana, data: await blobToDataUrl(p.blob) })));
     download({ ...state, photos: list }, `ダイエット記録_写真つき_${ymd(new Date())}.json`);
   };
   $('importBtn').onclick = () => $('importFile').click();
@@ -2029,7 +2225,7 @@
         const have = new Set((await PDB.all()).map((p) => p.id));
         for (const p of plist) {
           if (have.has(p.id) || !p.data) continue;
-          await PDB.put({ id: p.id, date: p.date, time: p.time, pose: p.pose, blob: await (await fetch(p.data)).blob() });
+          await PDB.put({ id: p.id, date: p.date, time: p.time, pose: p.pose, ana: p.ana, blob: await (await fetch(p.data)).blob() });
         }
         await loadPhotos();
       }
