@@ -156,7 +156,18 @@
   table.days { width: 100%; border-collapse: collapse; font-size: 16px; font-variant-numeric: tabular-nums; }
   table.days th, table.days td { padding: 10px 4px; border-bottom: 1px solid var(--line); text-align: right; }
   table.days th:first-child, table.days td:first-child { text-align: left; }
-  table.days th { color: var(--sub); font-weight: 400; font-size: 14px; }
+  table.days th { color: var(--sub); font-weight: 400; font-size: 14px; white-space: nowrap; }
+  table.days td { white-space: nowrap; }
+  table.days .good { color: var(--ok); font-weight: 700; }
+  table.days .bad { color: var(--warn); font-weight: 700; }
+  .tablewrap { overflow-x: auto; margin: 0 -4px; }
+  .daybody { padding: 12px 16px; }
+  .dbrow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; padding: 4px 0; }
+  .dbrow span { font-size: 15px; color: var(--sub); min-width: 7.5em; }
+  .dbrow b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .dbrow b.good { color: var(--ok); }
+  .dbrow b.bad { color: var(--warn); }
+  .dbrow small { font-size: 14px; color: var(--sub); font-variant-numeric: tabular-nums; }
 
   h2.sec { font-size: 18px; margin: 26px 0 8px; }
   p.note { color: var(--sub); font-size: 15px; margin: 6px 0 12px; }
@@ -254,6 +265,7 @@
     <div style="height:10px"></div>
     <button class="btn block" id="moveToSafari">記録をSafariへ移す</button>
   </div>
+  <div class="card daybody" id="dayBody" hidden></div>
   <div class="card"><div class="meters" id="meters"></div></div>
   <button class="talkbtn" id="talkOpen"><b>🎤</b>食べたものを話す・書く</button>
   <div class="syncbar" id="syncbar" hidden>
@@ -314,7 +326,8 @@
   <h2 class="sec">直近7日の平均（記録のある日）</h2>
   <div class="card"><div class="stats" id="avg"></div></div>
   <h2 class="sec">日別</h2>
-  <table class="days" id="daysTable"></table>
+  <div class="tablewrap"><table class="days" id="daysTable"></table></div>
+  <p class="note">差引は「食べた − 消費（安静時＋活動）」です。マイナスの日は体脂肪が減る方向です。消費はヘルスケアから取り込んだApple Watchの数字で、多めに出ることがあります。</p>
 </main>
 
 <!-- 設定 -->
@@ -855,6 +868,29 @@
     </div>`;
   }
 
+  // その日の体重と、食べた量 − 消費（安静時＋活動）の差し引き。今日の分は消費が夜まで増えるので「途中」
+  function renderDayBody(eat) {
+    const day = curDate, isToday = day === ymd(new Date()), b = bodyOf(day);
+    const w = G.weight(b), w7 = trend(day, G.weight), fat = G.fat(b), burn = burnOf(day);
+    const rows = [];
+    if (w != null || w7 != null) {
+      rows.push(`<div class="dbrow"><span>体重</span><b>${w != null ? w.toFixed(1) + ' kg' : '−'}</b>
+        <small>${w7 != null ? `7日平均 ${w7.toFixed(1)}kg` : ''}${fat != null ? `　体脂肪率 ${fat.toFixed(1)}%` : ''}</small></div>`);
+    }
+    if (eat > 0 || burn != null) {
+      const bal = burn != null ? eat - burn : null;
+      rows.push(`<div class="dbrow"><span>差し引き${isToday ? '（途中）' : ''}</span>
+        <b class="${bal == null ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + ' kcal' : '−'}</b>
+        <small>食べた ${Math.round(eat)}　消費 ${burn != null ? Math.round(burn) : '未取り込み'}</small></div>`);
+      if (isToday && burn != null) rows.push('<p class="note" style="margin:2px 0 0">消費は最後にヘルスケアから取り込んだ時点までの数字です。夜に「取り込む」を押すと、その日の結果に近づきます。</p>');
+      // 確定した日は、体重の変化から逆算した実測の消費でも見せる
+      const ad = !isToday && mealCount(day) >= 2 ? adaptiveTdee() : null;
+      if (ad && ad.tdee) rows.push(`<p class="note" style="margin:2px 0 0">実測の消費（約${Math.round(ad.tdee)}kcal）で見ると ${sign(eat - ad.tdee, 0)} kcal</p>`);
+    }
+    $('dayBody').hidden = !rows.length;
+    $('dayBody').innerHTML = rows.join('');
+  }
+
   function renderLog() {
     const isToday = curDate === ymd(new Date());
     $('dateTitle').textContent = dateLabel(curDate);
@@ -868,6 +904,7 @@
       meter('糖質', t.sugar, s.goalSugar, 'g', 'var(--sugar)') +
       meter('脂質', t.fat, s.goalFat, 'g', 'var(--fat)') +
       alcMeter(t.alc);
+    renderDayBody(t.kcal);
 
     const unsynced = state.entries.filter((e) => !e.synced);
     $('syncbar').hidden = unsynced.length === 0;
@@ -1446,6 +1483,8 @@
 
   // ---------- からだの計算 ----------
   const bodyOf = (day) => state.body[day] || {};
+  // 1日の消費＝安静時＋活動。安静時がない日は数字が小さすぎるので出さない
+  const burnOf = (day) => { const b = bodyOf(day); return b.basal > 0 ? b.basal + (b.active || 0) : null; };
   const G = {
     weight: (b) => (b.weight > 0 ? b.weight : null),
     fat: (b) => (b.fat > 0 ? b.fat : null),
@@ -2165,11 +2204,16 @@
       <div><small>糖質</small><b>${r1(avg('sugar'))}</b><small>/ ${s.goalSugar} g</small></div>
       <div><small>脂質</small><b>${r1(avg('fat'))}</b><small>/ ${s.goalFat} g</small></div>`;
 
-    $('daysTable').innerHTML = `<tr><th>日付</th><th>kcal</th><th>タンパク</th><th>糖質</th><th>脂質</th><th>酒g</th></tr>` +
-      byDay.slice().reverse().filter((x) => x.list.length).map((x) => {
-        const d = parseYmd(x.day);
+    const today = ymd(new Date());
+    $('daysTable').innerHTML = `<tr><th>日付</th><th>食べた</th><th>消費</th><th>差引</th><th>体重</th><th>酒g</th><th>タンパク</th><th>糖質</th><th>脂質</th></tr>` +
+      byDay.slice().reverse().filter((x) => x.list.length || G.weight(bodyOf(x.day)) != null).map((x) => {
+        const d = parseYmd(x.day), burn = burnOf(x.day), wt = G.weight(bodyOf(x.day));
+        const bal = burn != null && x.list.length ? x.t.kcal - burn : null;
         return `<tr><td>${d.getMonth() + 1}/${d.getDate()}（${WEEK[d.getDay()]}）</td>
-          <td>${Math.round(x.t.kcal)}</td><td>${r1(x.t.protein)}</td><td>${r1(x.t.sugar)}</td><td>${r1(x.t.fat)}</td><td>${x.t.alc ? Math.round(x.t.alc) : '−'}</td></tr>`;
+          <td>${x.list.length ? Math.round(x.t.kcal) : '−'}</td><td>${burn != null ? Math.round(burn) : '−'}</td>
+          <td class="${bal == null || x.day === today ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + (x.day === today ? '…' : '') : '−'}</td>
+          <td>${wt != null ? wt.toFixed(1) : '−'}</td><td>${x.t.alc ? Math.round(x.t.alc) : '−'}</td>
+          <td>${r1(x.t.protein)}</td><td>${r1(x.t.sugar)}</td><td>${r1(x.t.fat)}</td></tr>`;
       }).join('');
   }
 
