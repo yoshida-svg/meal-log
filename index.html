@@ -719,6 +719,15 @@
 
   // ---------- 保存 ----------
   let state;
+  // 名前でお酒かどうかを見分ける。KAIが純アルコール量を付け忘れたリンクや、手入力のお酒を「お酒」の欄に入れるため。
+  // 「ジン」「ラム」は ニンジン・ラムネ などに混ざるので、単独では使わない
+  const DRINK_RE = /ビール|生中|ハイボール|サワー|チューハイ|酎ハイ|日本酒|熱燗|冷酒|吟醸|純米|焼酎|泡盛|ワイン|シャンパン|スパークリング|ウイスキー|ウィスキー|ブランデー|ウォッカ|テキーラ|ジントニック|ジンソーダ|ラムコーク|梅酒|果実酒|紹興酒|マッコリ|カクテル|ホッピー|発泡酒|第三のビール|リキュール|ストロング|^酒$/;
+  const NOT_DRINK_RE = /ノンアル|アルコールフリー|オールフリー|0\.00|ゼロ（ノンアル|煮|蒸し|ソース|ビネガー|漬け|粕|鍋|焼き|風味|ゼリー|ケーキ|チョコ|クリーム|ジンジャー/;
+  const looksDrink = (name) => DRINK_RE.test(name || '') && !NOT_DRINK_RE.test(name || '');
+  // 純アルコール量が分からないお酒は、カロリーから推定する（アルコールは1g＝7kcal、糖質・タンパク質は4kcal、脂質は9kcal）
+  const estAlc = (e) => Math.max(0, Math.round(((e.kcal || 0) - (e.carb || 0) * 4 - (e.protein || 0) * 4 - (e.fat || 0) * 9) / 7 * 10) / 10);
+  const fixDrink = (e) => (!(e.alc > 0) && looksDrink(e.name) ? { ...e, alc: estAlc(e), alcEst: true } : e);
+
   // 保存データを今の形にそろえる（旧版のデータ・読み込んだバックアップにも使う）
   function normalizeState(s) {
     const byId = Object.fromEntries(DEFAULT_FOODS.map((f) => [f.id, f]));
@@ -735,10 +744,12 @@
       foods = foods.concat(DEFAULT_FOODS.filter((f) => f.alc && !have.has(f.id)));
     }
     // お酒に対応する前に記録したビールにも、純アルコール量を補う
-    const entries = (s.entries || []).map((e) => e.alc === undefined && byId[e.foodId] && byId[e.foodId].alc
+    let entries = (s.entries || []).map((e) => e.alc === undefined && byId[e.foodId] && byId[e.foodId].alc
       ? { ...e, alc: Math.round(byId[e.foodId].alc * (e.kcal / byId[e.foodId].kcal) * 10) / 10 } : e);
+    // KAIのリンクで純アルコール量が抜けて、食事の欄に入ってしまったお酒を一度だけ直す
+    if (!s.drinkFix) entries = entries.map((e) => { const f = fixDrink(e); return f === e ? e : { ...f, meal: 'お酒' }; });
     return {
-      entries, foods, foodsVer: FOODS_VER, imported: s.imported || [], triedImports: s.triedImports || [],
+      entries, foods, drinkFix: 1, foodsVer: FOODS_VER, imported: s.imported || [], triedImports: s.triedImports || [],
       home: !!s.home, syncedIds: s.syncedIds || [], body: s.body || {}, bodyImportedAt: s.bodyImportedAt || '',
       backupAt: s.backupAt || '', settings: { ...DEFAULT_SETTINGS, ...s.settings },
     };
@@ -770,7 +781,7 @@
   const NUTR = ['kcal', 'carb', 'fiber', 'fat', 'protein', 'alc'];
   const scale = (f, q) => Object.fromEntries(NUTR.map((k) => [k, r1((f[k] || 0) * q)]));
   const macroText = (e) => e.alc > 0
-    ? `純アルコール ${r1(e.alc)}g　糖質 ${r1(sugarOf(e))}g`
+    ? `純アルコール ${e.alcEst ? '約' : ''}${r1(e.alc)}g　糖質 ${r1(sugarOf(e))}g`
     : `糖質 ${r1(sugarOf(e))}g　脂質 ${r1(e.fat)}g　タンパク質 ${r1(e.protein || 0)}g`;
   const dateLabel = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}月${d.getDate()}日（${WEEK[d.getDay()]}）`; };
 
@@ -895,9 +906,10 @@
 
   // 記録を追加する共通処理
   // お酒はどの食事と一緒に言っても「お酒」の欄に入れる
-  const mealOf = (it, meal) => (it.alc > 0 ? 'お酒' : meal === 'お酒' ? mealByHour(new Date().getHours()) : meal);
+  // お酒と一緒に記録したつまみは、記録の時刻で朝食・昼食・夕食・間食に振り分ける
+  const mealOf = (it, meal, time) => (it.alc > 0 || looksDrink(it.name) ? 'お酒' : meal === 'お酒' ? mealByHour(time ? parseInt(time, 10) : new Date().getHours()) : meal);
   function addEntries(items, date, time, meal) {
-    const added = items.map((it) => ({ id: uid(), date, time, synced: false, unit: '', ...it, meal: mealOf(it, meal) }));
+    const added = items.map(fixDrink).map((it) => ({ id: uid(), date, time, synced: false, unit: '', ...it, meal: mealOf(it, meal, time) }));
     state.entries.push(...added); save(); curDate = date; closeSheet(); renderLog();
     if (state.settings.autoSync) sendToHealth(added);
     else toast(added.length === 1 ? `${added[0].name} を記録しました` : `${added.length} 品を記録しました`);
@@ -1060,7 +1072,7 @@
     ].filter(Boolean).join('\n');
     // アプリで計算できた分は、KAIへ移る前に記録しておく（ヘルスケアへはKAIの分と一緒に送る）
     if (talk.items.length) {
-      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', ...it, meal: mealOf(it, talk.meal) })));
+      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', ...it, meal: mealOf(it, talk.meal, time) })));
       save(); curDate = talk.date; renderLog();
     }
     location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
@@ -1172,6 +1184,7 @@
       meal: editMeal, name: $('eName').value.trim() || editing.name, unit: $('eUnit').value.trim(),
       kcal: num($('eKcal').value), fat: num($('eFat').value), carb: num($('eCarb').value), fiber: num($('eFiber').value), protein: num($('eProtein').value),
       time: $('eTime').value || editing.time, alc: num($('eAlc').value),
+      alcEst: !!editing.alcEst && num($('eAlc').value) === editing.alc, // 手で直したら推定ではなくなる
     });
     save(); closeSheet(); renderLog(); toast('保存しました');
   };
@@ -1218,7 +1231,7 @@
     const now = new Date();
     const items = params.getAll('i').map((s) => {
       const [name, kcal, carb, fiber, fat, protein, alc] = s.split('~');
-      return { name: (name || '').trim(), kcal: num(kcal), carb: num(carb), fiber: num(fiber), fat: num(fat), protein: num(protein), alc: num(alc) };
+      return fixDrink({ name: (name || '').trim(), kcal: num(kcal), carb: num(carb), fiber: num(fiber), fat: num(fat), protein: num(protein), alc: num(alc) });
     }).filter((x) => x.name);
     const okTime = /^\d{1,2}:\d{2}$/.test(time || '');
     return {
@@ -1232,7 +1245,7 @@
   function importEntries(imp, synced) {
     state.imported = state.imported || [];
     if (state.imported.includes(imp.key)) { toast('この記録はすでに取り込み済みです'); return false; }
-    imp.items.forEach((it) => state.entries.push({ id: uid(), date: imp.date, time: imp.time, unit: '', synced, ...it, meal: mealOf(it, imp.meal) }));
+    imp.items.forEach((it) => state.entries.push({ id: uid(), date: imp.date, time: imp.time, unit: '', synced, ...it, meal: mealOf(it, imp.meal, imp.time) }));
     state.imported = [...state.imported, imp.key].slice(-300);
     save(); curDate = imp.date; renderLog();
     return true;
