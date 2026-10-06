@@ -478,6 +478,7 @@
       <div class="field"><label>脂質（g）</label><input type="number" inputmode="decimal" id="eFat"></div>
       <div class="field"><label>炭水化物（g）</label><input type="number" inputmode="decimal" id="eCarb"></div>
       <div class="field"><label>食物繊維（g）</label><input type="number" inputmode="decimal" id="eFiber"></div>
+      <div class="field"><label>日付</label><input type="date" id="eDate"></div>
       <div class="field"><label>時刻</label><input type="time" id="eTime"></div>
       <div class="field"><label>純アルコール（g）</label><input type="number" inputmode="decimal" id="eAlc"></div>
     </div>
@@ -1207,6 +1208,7 @@
     $('eKcal').value = editing.kcal; $('eFat').value = editing.fat; $('eProtein').value = editing.protein || 0;
     $('eCarb').value = editing.carb; $('eFiber').value = editing.fiber;
     $('eTime').value = editing.time;
+    $('eDate').value = editing.date;
     $('eAlc').value = editing.alc || '';
     $('eSyncNote').textContent = editing.synced
       ? 'この記録はヘルスケアに送信済みです。修正・削除してもヘルスケア側は変わらないので、ヘルスケアアプリでも直してください。'
@@ -1225,7 +1227,11 @@
       time: $('eTime').value || editing.time, alc: num($('eAlc').value),
       alcEst: !!editing.alcEst && num($('eAlc').value) === editing.alc, // 手で直したら推定ではなくなる
     });
-    save(); closeSheet(); renderLog(); toast('保存しました');
+    // 日付を変えたら、その日に移す（記録し忘れた日の分を、あとから正しい日に直せるように）
+    const moved = /^\d{4}-\d{2}-\d{2}$/.test($('eDate').value) && $('eDate').value !== editing.date;
+    if (moved) editing.date = $('eDate').value;
+    save(); closeSheet(); renderLog();
+    toast(moved ? `${dateLabel(editing.date)}に移しました${editing.synced ? '（ヘルスケア側の日付は変わりません）' : ''}` : '保存しました');
   };
   $('deleteEntry').onclick = () => {
     if (!confirm(`「${editing.name}」を削除しますか？`)) return;
