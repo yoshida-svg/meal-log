@@ -762,8 +762,18 @@
       ? { ...e, alc: Math.round(byId[e.foodId].alc * (e.kcal / byId[e.foodId].kcal) * 10) / 10 } : e);
     // KAIのリンクで純アルコール量が抜けて、食事の欄に入ってしまったお酒を一度だけ直す
     if (!s.drinkFix) entries = entries.map((e) => { const f = fixDrink(e); return f === e ? e : { ...f, meal: 'お酒' }; });
+    // 「350ml缶 × 350」のように、量の数字を本数と読んでしまった記録を一度だけ直す（350本 → 350ml 1本）
+    if (!s.qtyFix) entries = entries.map((e) => {
+      const m = /×\s*(\d+(?:\.\d+)?)$/.exec(e.unit || ''), d = byId[e.foodId];
+      const base = d && (d.unit.match(/(\d+(?:\.\d+)?)\s*(g|ml)/) || [])[1];
+      if (!m || !base || +m[1] < 50) return e;
+      const n = +m[1], k = n / +base / n; // 正しい倍率 ÷ 記録された倍率
+      const fix = {};
+      ['kcal', 'carb', 'fiber', 'fat', 'protein', 'alc'].forEach((x) => { if (e[x] != null) fix[x] = Math.round(e[x] * k * 10) / 10; });
+      return { ...e, ...fix, unit: `${n}${/ml/.test(d.unit) ? 'ml' : 'g'}` };
+    });
     return {
-      entries, foods, drinkFix: 1, foodsVer: FOODS_VER, imported: s.imported || [], triedImports: s.triedImports || [],
+      entries, foods, drinkFix: 1, qtyFix: 1, foodsVer: FOODS_VER, imported: s.imported || [], triedImports: s.triedImports || [],
       home: !!s.home, syncedIds: s.syncedIds || [], body: s.body || {}, bodyImportedAt: s.bodyImportedAt || '',
       backupAt: s.backupAt || '', settings: { ...DEFAULT_SETTINGS, ...s.settings },
     };
@@ -871,7 +881,7 @@
 
   // その日の体重と、食べた量 − 消費（安静時＋活動）の差し引き。今日の分は消費が夜まで増えるので「途中」
   function renderDayBody(eat) {
-    const day = curDate, isToday = day === ymd(new Date()), b = bodyOf(day);
+    const day = curDate, isToday = day === ymd(new Date()), b = bodyOf(day), partial = burnPartial(day);
     const w = G.weight(b), w7 = trend(day, G.weight), fat = G.fat(b), burn = burnOf(day);
     const rows = [];
     if (w != null || w7 != null) {
@@ -880,10 +890,10 @@
     }
     if (eat > 0 || burn != null) {
       const bal = burn != null ? eat - burn : null;
-      rows.push(`<div class="dbrow"><span>差し引き${isToday ? '（途中）' : ''}</span>
-        <b class="${bal == null ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + ' kcal' : '−'}</b>
+      rows.push(`<div class="dbrow"><span>差し引き${partial ? '（途中）' : ''}</span>
+        <b class="${bal == null || partial ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + ' kcal' : '−'}</b>
         <small>食べた ${Math.round(eat)}　消費 ${burn != null ? Math.round(burn) : '未取り込み'}</small></div>`);
-      if (isToday && burn != null) rows.push('<p class="note" style="margin:2px 0 0">消費は最後にヘルスケアから取り込んだ時点までの数字です。夜に「取り込む」を押すと、その日の結果に近づきます。</p>');
+      if (partial && burn != null) rows.push(`<p class="note" style="margin:2px 0 0">消費は${isToday ? '' : 'この日の途中の'}、最後にヘルスケアから取り込んだ時点までの数字です。${isToday ? '夜に' : ''}「取り込む」を押すと、${isToday ? 'その日の結果に近づきます' : 'この日の消費が確定します'}。</p>`);
       // 確定した日は、体重の変化から逆算した実測の消費でも見せる
       const ad = !isToday && mealCount(day) >= 2 ? adaptiveTdee() : null;
       if (ad && ad.tdee) rows.push(`<p class="note" style="margin:2px 0 0">実測の消費（約${Math.round(ad.tdee)}kcal）で見ると ${sign(eat - ad.tdee, 0)} kcal</p>`);
@@ -967,9 +977,15 @@
   const COMPOUND_RE = /^(弁当|べんとう|丼|どん|定食|セット|御膳|バーガー|サンド|カレー|ラーメン|そば|うどん|パン|入り|味|風|チャーハン|炒め|煮|ソース|ドレッシング|まん|巻き)/;
   const BEFORE_RE =new RegExp(QNUM + '\\s*(個|杯|本|枚|切れ|パック|皿|人前|つ|玉|缶|膳|丁|袋|合|グラス)の?\\s*$');
 
+  // 全角の数字・英字を半角にし、量の書き方をそろえる（日本語入力だと「３５０ｍｌ」になりやすい）
   function normalize(t) {
-    return t.replace(/[０-９．]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[ｇ]/g, 'g').replace(/　/g, ' ');
+    return t.replace(/[０-９．Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+      .replace(/ミリリットル|mL|ML|Ml/g, 'ml').replace(/　/g, ' ');
   }
+  // 「350ml」の後ろに続く本数（「350ml缶2本」「350mlを2缶」）
+  const MORE_RE = new RegExp('^\\s*(?:の缶|缶|入り)?\\s*[をがの]?\\s*' + QNUM + '\\s*(本|缶|杯|つ|個)');
+  // 本数として読まない単位（これ以外で50以上の数は、本数ではなく ml・g とみなす）
+  const COUNT_ONLY_RE = /^(個|こ|枚|切れ|切|パック|皿|人前|つ|玉|膳|丁|袋)$/;
   function unitGrams(unit) { const m = (unit || '').match(/(\d+(?:\.\d+)?)\s*(g|ml)/); return m ? num(m[1]) : 0; }
   function qtyValue(s) { return KNUM[s] !== undefined ? KNUM[s] : num(s); }
 
@@ -996,11 +1012,18 @@
         const before = t.slice(0, idx).match(BEFORE_RE);
         if (after) {
           const n = qtyValue(after[1]), u = after[2] || '';
-          if (/^(g|グラム|ml|ミリ|cc)$/.test(u)) {
-            const base = unitGrams(f.unit);
-            if (base) { qty = n / base; note = `${n}${u === 'グラム' ? 'g' : u}`; } else note = '量はg換算できないので1人前で計算';
+          const base = unitGrams(f.unit);
+          // 「レモンサワー350」「350缶」のような大きい数は、本数ではなく量（ml・g）とみなす。1回に50本は食べない・飲まない
+          const isAmount = /^(g|グラム|ml|ミリ|cc)$/.test(u) || (n >= 50 && !COUNT_ONLY_RE.test(u));
+          let len = after[0].length;
+          if (isAmount) {
+            const unitText = /^(g|グラム)$/.test(u) || (!u && /g/.test(f.unit) && !/ml/.test(f.unit)) ? 'g' : 'ml';
+            if (base) { qty = n / base; note = `${n}${unitText}`; } else note = '量はg換算できないので1人前で計算';
+            // 後ろに本数が続けば掛ける（「350ml缶2本」）
+            const more = t.slice(end + len).match(MORE_RE);
+            if (more && base) { const c = qtyValue(more[1]); if (c > 0) { qty *= c; note += ` × ${c}`; len += more[0].length; } }
           } else qty = n;
-          mark(end, end + after[0].length);
+          mark(end, end + len);
         } else if (before && !used.slice(idx - before[0].length, idx).some(Boolean)) {
           qty = qtyValue(before[1]);
           mark(idx - before[0].length, idx);
@@ -1068,7 +1091,9 @@
         <div class="q"><button data-i="${i}" data-d="-0.5">−</button><span>${esc(qtyLabel(it))}</span><button data-i="${i}" data-d="0.5">＋</button></div>
         <button class="x" data-del="${i}" aria-label="外す">×</button>
       </div>`;
-    }).join('') : `<p class="empty">一覧にある食べ物が見つかりませんでした。KAIに計算してもらうか、マイ食品に登録してください。</p>`;
+    }).join('') + (talk.items.some(tooMuch)
+      ? `<div class="unknown"><b>量が多すぎるようです。</b>${talk.items.filter(tooMuch).map((it) => `${esc(it.f.name)}が ${r1(it.qty)}人前分`).join('、')}になっています。−ボタンで量を直してから記録してください。</div>` : '')
+      : `<p class="empty">一覧にある食べ物が見つかりませんでした。KAIに計算してもらうか、マイ食品に登録してください。</p>`;
     $('talkItems').querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => {
       const it = talk.items[b.dataset.i];
       it.qty = Math.max(0.5, r1(it.qty + num(b.dataset.d))); it.note = ''; renderTalk();
@@ -1088,8 +1113,12 @@
       ...scale(it.f, it.qty),
     }));
   }
+  // 1品で15人前を超えるのは、数字の読み違いの可能性が高い
+  const tooMuch = (it) => it.qty > 15;
   $('talkAdd').onclick = () => {
     if (!talk || !talk.items.length) return;
+    const big = talk.items.filter(tooMuch);
+    if (big.length && !confirm(`${big.map((it) => `${it.f.name} ${r1(it.qty)}人前分（${Math.round(it.f.kcal * it.qty)}kcal）`).join('、')}で記録します。量は合っていますか？`)) return;
     addEntries(talkEntries(), talk.date, timeFor(talk.date, talk.meal), talk.meal);
   };
 
@@ -1493,6 +1522,9 @@
   const bodyOf = (day) => state.body[day] || {};
   // 1日の消費＝安静時＋活動。安静時がない日は数字が小さすぎるので出さない
   const burnOf = (day) => { const b = bodyOf(day); return b.basal > 0 ? b.basal + (b.active || 0) : null; };
+  // 取り込みは毎回30日分を上書きするので、最後に取り込んだ日より前の日は消費が確定している。
+  // 取り込んだ日以降は、その時点までの途中の数字
+  const burnPartial = (day) => !state.bodyImportedAt || day >= ymd(new Date(state.bodyImportedAt));
   const G = {
     weight: (b) => (b.weight > 0 ? b.weight : null),
     fat: (b) => (b.fat > 0 ? b.fat : null),
@@ -1748,7 +1780,7 @@
   function renderEnergy() {
     const s = state.settings, today = ymd(new Date());
     const d7 = Array.from({ length: 7 }, (_, i) => addDays(today, -(i + 1)));
-    const eat = d7.filter((d) => mealCount(d) >= 2), burn = d7.filter((d) => bodyOf(d).active > 0 && bodyOf(d).basal > 0);
+    const eat = d7.filter((d) => mealCount(d) >= 2), burn = d7.filter((d) => bodyOf(d).active > 0 && bodyOf(d).basal > 0 && !burnPartial(d));
     const eatAvg = eat.length ? eat.reduce((a, d) => a + dayKcal(d), 0) / eat.length : null;
     const burnAvg = burn.length ? burn.reduce((a, d) => a + bodyOf(d).active + bodyOf(d).basal, 0) / burn.length : null;
     const ad = adaptiveTdee();
@@ -1758,6 +1790,10 @@
     const goal = base && w ? Math.round((base - (w * s.pace / 100) * 7200 / 7) / 50) * 50 : null;
     const protein = lean ? Math.round((lean * 1.8) / 5) * 5 : w ? Math.round((w * 1.4) / 5) * 5 : null;
     const bal = eatAvg != null && burnAvg != null ? eatAvg - burnAvg : null;
+    // 安静時消費は大人でふつう1,200〜2,200kcal。大きく超えるのは、同じデータが2つのアプリから入って足し算されているとき
+    const basalAvg = burn.length ? burn.reduce((a, d) => a + bodyOf(d).basal, 0) / burn.length : null;
+    const basalWarn = basalAvg > 2600
+      ? `<div class="unknown"><b>安静時消費が1日 約${Math.round(basalAvg).toLocaleString()}kcal と、ふつうの2倍近くあります。</b>Apple Watchのほかに、体組成計のアプリなども同じ「安静時消費エネルギー」を書き込み、ヘルスケアで足し算されている可能性が高いです。この間は消費が多すぎるので、差し引きは「実測の消費」の方を参考にしてください。</div>` : '';
 
     $('energyCard').innerHTML = `
       <div class="kv"><span>食べた量（直近7日の平均）</span><span>${eatAvg != null ? Math.round(eatAvg) + ' kcal' : '−'}</span></div>
@@ -1766,6 +1802,7 @@
       <div class="kv"><span>実測の消費（体重の変化から逆算）</span><span>${ad.tdee ? Math.round(ad.tdee) + ' kcal' : `記録2週間分で表示（今 ${ad.logged}日）`}</span></div>
       <div class="kv hi"><span>1日の目安（週 ${s.pace}% ペース）</span><span>${goal ? goal + ' kcal' : '−'}</span></div>
       <div class="kv hi"><span>タンパク質の目安（${lean ? '除脂肪体重 × 1.8g' : '体重 × 1.4g'}）</span><span>${protein ? protein + ' g' : '−'}</span></div>
+      ${basalWarn}
       <p class="note">Apple Watchの消費カロリーは多めに出ることがあります。4週間分の記録がたまると、実際の体重の変化から逆算した「実測の消費」で目安を出します。朝昼夕のうち2回以上記録した日だけを使います。</p>
       ${goal || protein ? `<div class="grid2">
         <button class="btn ghost small" id="useGoalKcal" ${goal ? '' : 'disabled'}>カロリー目標にする</button>
@@ -2219,7 +2256,7 @@
         const bal = burn != null && x.list.length ? x.t.kcal - burn : null;
         return `<tr><td>${d.getMonth() + 1}/${d.getDate()}（${WEEK[d.getDay()]}）</td>
           <td>${x.list.length ? Math.round(x.t.kcal) : '−'}</td><td>${burn != null ? Math.round(burn) : '−'}</td>
-          <td class="${bal == null || x.day === today ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + (x.day === today ? '…' : '') : '−'}</td>
+          <td class="${bal == null || burnPartial(x.day) ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + (burnPartial(x.day) ? '…' : '') : '−'}</td>
           <td>${wt != null ? wt.toFixed(1) : '−'}</td><td>${x.t.alc ? Math.round(x.t.alc) : '−'}</td>
           <td>${r1(x.t.protein)}</td><td>${r1(x.t.sugar)}</td><td>${r1(x.t.fat)}</td></tr>`;
       }).join('');
