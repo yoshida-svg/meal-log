@@ -972,7 +972,7 @@
   function unitGrams(unit) { const m = (unit || '').match(/(\d+(?:\.\d+)?)\s*(g|ml)/); return m ? num(m[1]) : 0; }
   function qtyValue(s) { return KNUM[s] !== undefined ? KNUM[s] : num(s); }
 
-  function parseSpeech(raw) {
+  function parseSpeech(raw, baseDate) {
     const t = normalize(raw);
     const dict = [];
     state.foods.forEach((f) => new Set([f.name, ...(f.aliases || [])]).forEach((a) => a && dict.push({ a, f })));
@@ -1010,11 +1010,13 @@
     }
     found.sort((x, y) => x.pos - y.pos);
 
-    // 食事区分と日付を言葉から判断する
-    const now = new Date();
-    let date = ymd(now), meal = null;
-    if (/昨日|きのう/.test(t)) { const d = new Date(); d.setDate(d.getDate() - 1); date = ymd(d); }
-    else if (/一昨日|おととい/.test(t)) { const d = new Date(); d.setDate(d.getDate() - 2); date = ymd(d); }
+    // 食事区分と日付を言葉から判断する。日付の言葉がなければ、いま画面で開いている日付にする
+    // （「一昨日」は「昨日」を含むので先に調べる。「今日」「昨日」は本当の今日から数える）
+    const today = ymd(new Date());
+    let date = baseDate || today, meal = null;
+    if (/一昨日|おととい/.test(t)) date = addDays(today, -2);
+    else if (/昨日|きのう/.test(t)) date = addDays(today, -1);
+    else if (/今日|きょう/.test(t)) date = today;
     if (/朝/.test(t)) meal = '朝食';
     else if (/昼|ランチ/.test(t)) meal = '昼食';
     else if (/夜|夕|晩|ディナー/.test(t)) meal = '夕食';
@@ -1044,7 +1046,7 @@
   $('talkCalc').onclick = () => {
     const text = $('talkText').value.trim();
     if (!text) return toast('食べたものを入れてください');
-    const p = parseSpeech(text);
+    const p = parseSpeech(text, curDate);
     const onlyDrinks = p.items.length && p.items.every((it) => it.f.alc > 0);
     talk = { text, date: p.date, meal: onlyDrinks ? 'お酒' : p.meal || defaultMeal(), items: p.items, unknown: p.unknown };
     segButtons($('talkMealSeg'), talk.meal, (m) => (talk.meal = m));
