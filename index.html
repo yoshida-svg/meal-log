@@ -919,7 +919,8 @@
 
     const unsynced = state.entries.filter((e) => !e.synced);
     $('syncbar').hidden = unsynced.length === 0;
-    $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（合計には含まれています）`;
+    const unsyncedDays = [...new Set(unsynced.map((e) => e.date))].sort().map((d) => { const x = parseYmd(d); return `${x.getMonth() + 1}/${x.getDate()}`; });
+    $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（${unsyncedDays.slice(0, 4).join('・')}${unsyncedDays.length > 4 ? 'ほか' : ''}）`;
 
     $('meals').innerHTML = MEALS.map((m) => {
       const items = list.filter((e) => e.meal === m);
@@ -1245,11 +1246,15 @@
     $('eUnsync').hidden = !editing.synced;
     openSheet($('editSheet'));
   }
+  // 開いている間にほかのタブの保存で読み直していても、今の記録を id で探し直して直す
+  const refindEditing = () => (editing = state.entries.find((e) => e.id === editing.id) || editing);
   $('eUnsync').onclick = () => {
+    refindEditing();
     editing.synced = false; editing.sendTried = false;
     save(); closeSheet(); renderLog(); toast('未送信に戻しました');
   };
   $('saveEntry').onclick = () => {
+    refindEditing();
     Object.assign(editing, {
       meal: editMeal, name: $('eName').value.trim() || editing.name, unit: $('eUnit').value.trim(),
       kcal: num($('eKcal').value), fat: num($('eFat').value), carb: num($('eCarb').value), fiber: num($('eFiber').value), protein: num($('eProtein').value),
@@ -1264,7 +1269,7 @@
   };
   $('deleteEntry').onclick = () => {
     if (!confirm(`「${editing.name}」を削除しますか？`)) return;
-    state.entries = state.entries.filter((e) => e !== editing);
+    state.entries = state.entries.filter((e) => e.id !== editing.id);
     save(); closeSheet(); renderLog(); toast('削除しました');
   };
 
@@ -2352,8 +2357,21 @@
   document.querySelectorAll('nav.tabs button').forEach((b) => (b.onclick = () => showView(b.dataset.view)));
 
   // ショートカットから戻ったとき、ハッシュ変更イベントが来ない場合に備える
+  // ショートカットから戻るたびにSafariの新しいタブが開くので、このアプリのタブが何枚もできる。
+  // 古いタブで保存すると、ほかのタブの新しい内容（送信済みの印・取り込んだ体重など）を消してしまうので、
+  // ほかのタブが保存したら、このタブも読み直す
+  function reloadState() {
+    state = load();
+    renderLog();
+    if ($('view-body').classList.contains('on')) renderBody();
+    if ($('view-history').classList.contains('on')) renderHistory();
+    if ($('view-settings').classList.contains('on')) renderSettings();
+  }
+  window.addEventListener('storage', (e) => { if (e.key === KEY) reloadState(); });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') handleHash();
+    if (document.visibilityState !== 'visible') return;
+    reloadState();
+    handleHash();
   });
 
   // ---------- ホーム画面のWebアプリ対策 ----------
