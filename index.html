@@ -1137,6 +1137,7 @@
       '一覧と合計を示し、糖質（炭水化物−食物繊維）も添えてください。',
       '最後に、次の形式の記録用リンクを1本だけ、マークダウンのリンク [この内容で記録する](URL) で付けてください。',
       `${app}#m=${talk.date}~${time}~${talk.meal}&i=食品名~kcal~炭水化物~食物繊維~脂質~タンパク質`,
+      `リンクの日付（${talk.date}）・時刻・食事区分は、上に書いたものをそのまま使い、今日の日付などに変えないでください。`,
       '1品ごとに &i= を繰り返します。数値は小数1桁まで、単位は書きません。食品名に半角スペース、半角カッコ、~ & # + は使わず、必要なら全角にしてください。',
       'お酒の場合は、タンパク質のあとに ~純アルコール量(g) を7つ目として付けてください（量ml × 度数 × 0.8）。',
     ].filter(Boolean).join('\n');
@@ -1282,7 +1283,11 @@
       kcal: r1(e.kcal), carb: r1(e.carb), fiber: r1(e.fiber), fat: r1(e.fat), protein: r1(e.protein || 0),
     }));
     const back = location.href.split('#')[0];
-    const ng = `${back}#syncerror`;
+    // 戻ってきたとき、送る前に開いていた日付の画面に戻すため、日付も一緒に渡す
+    // （戻るとアプリは開き直しになり、何もしないと「今日」の画面になる。そのまま続きを入れると今日に記録されてしまう）
+    const view = `view=${curDate}`;
+    const ng = `${back}#syncerror&${view}`;
+    okHash = `${okHash}&${view}`;
     location.href = 'shortcuts://x-callback-url/run-shortcut'
       + '?name=' + encodeURIComponent(state.settings.scName)
       + '&input=text&text=' + encodeURIComponent(JSON.stringify(payload))
@@ -1426,16 +1431,19 @@
       return;
     }
     const h = decodeURIComponent(raw);
+    const view = (h.match(/(?:^|&)view=(\d{4}-\d{2}-\d{2})/) || [])[1];
+    if (view) curDate = view;
     if (h.startsWith('synced=')) {
       state.home = true;
-      const ids = new Set(h.slice(7).split(','));
+      const ids = new Set(h.slice(7).split('&')[0].split(','));
       let n = 0;
       state.entries.forEach((e) => { if (ids.has(e.id) && !e.synced) { e.synced = true; n++; } });
       // このブラウザにない記録の送信完了（ホーム画面のWebアプリから送った分）も覚えておき、移したときに送信済みにする
       state.syncedIds = [...(state.syncedIds || []), ...[...ids].filter((id) => !state.entries.some((e) => e.id === id))].slice(-500);
       save(); renderLog();
       if (n) toast(`${n} 件をヘルスケアに送りました`);
-    } else if (h === 'syncerror') {
+    } else if (h.startsWith('syncerror')) {
+      renderLog();
       toast('送信できませんでした。ショートカット名を確認してください');
     }
     history.replaceState(null, '', location.pathname + location.search);
