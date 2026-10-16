@@ -920,7 +920,9 @@
     const unsynced = state.entries.filter((e) => !e.synced);
     $('syncbar').hidden = unsynced.length === 0;
     const unsyncedDays = [...new Set(unsynced.map((e) => e.date))].sort().map((d) => { const x = parseYmd(d); return `${x.getMonth() + 1}/${x.getDate()}`; });
-    $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（${unsyncedDays.slice(0, 4).join('・')}${unsyncedDays.length > 4 ? 'ほか' : ''}）`;
+    const triedN = unsynced.filter((e) => e.sendTried).length;
+    $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（${unsyncedDays.slice(0, 4).join('・')}${unsyncedDays.length > 4 ? 'ほか' : ''}）`
+      + (triedN ? `。うち ${triedN} 件は送ったあと結果が戻らなかった分です` : '');
 
     $('meals').innerHTML = MEALS.map((m) => {
       const items = list.filter((e) => e.meal === m);
@@ -960,7 +962,9 @@
   function addEntries(items, date, time, meal) {
     const added = items.map(fixDrink).map((it) => ({ id: uid(), date, time, synced: false, unit: '', ...it, meal: mealOf(it, meal, time) }));
     state.entries.push(...added); save(); curDate = date; closeSheet(); renderLog();
-    if (state.settings.autoSync) sendToHealth(added);
+    // 自動送信のときは、今回の分に加えて、これまで送り忘れていた分（一度も送っていないもの）も一緒に送る。
+    // 一度送ろうとして結果が戻らなかった分は、ヘルスケアに入っている可能性があるので、ここでは送らない（重複を防ぐ）
+    if (state.settings.autoSync) sendToHealth([...added, ...state.entries.filter((e) => !e.synced && !e.sendTried && !added.includes(e))]);
     else toast(added.length === 1 ? `${added[0].name} を記録しました` : `${added.length} 品を記録しました`);
   }
   function timeFor(date, meal) {
@@ -1143,7 +1147,7 @@
     ].filter(Boolean).join('\n');
     // アプリで計算できた分は、KAIへ移る前に記録しておく（ヘルスケアへはKAIの分と一緒に送る）
     if (talk.items.length) {
-      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', ...it, meal: mealOf(it, talk.meal, time) })));
+      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', kaiPending: true, ...it, meal: mealOf(it, talk.meal, time) })));
       save(); curDate = talk.date; renderLog();
     }
     location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
@@ -1299,7 +1303,14 @@
   const DUP_WARN = 'ヘルスケアは同じ記録を送ると、その分だけ重複して保存します。\nヘルスケアアプリの「栄養」で入っていないことを確認してから送ってください。\n\nこのまま送りますか？';
   function sendToHealth(entries) {
     const tried = entries.filter((e) => e.sendTried);
-    if (tried.length && !confirm(`${tried.length} 件は一度送信しようとした記録です（送信結果が戻ってきませんでした）。\n${DUP_WARN}`)) return;
+    if (tried.length && !confirm(`${tried.length} 件は一度送信しようとした記録です（送信結果が戻ってきませんでした）。\n${DUP_WARN}`)) {
+      // 送り直さない場合：ヘルスケアに入っているのを確かめられたなら、送信済みにして「未送信」を消せるようにする
+      if (confirm(`ヘルスケアアプリの「栄養」で、この ${tried.length} 件が入っているのを確認できましたか？\n「OK」を押すと、送り直さずに送信済みにします。`)) {
+        tried.forEach((e) => { e.synced = true; e.kaiPending = false; });
+        save(); renderLog(); toast(`${tried.length} 件を送信済みにしました`);
+      }
+      return;
+    }
     entries.forEach((e) => (e.sendTried = true)); save();
     runShortcut(entries, `synced=${entries.map((e) => e.id).join(',')}`);
   }
@@ -1368,7 +1379,8 @@
     $('impOutside').hidden = true; $('impInside').hidden = false;
     history.replaceState(null, '', location.pathname + location.search);
   };
-  function importExtras(imp) { return state.entries.filter((e) => !e.synced && e.date === imp.date); }
+  // KAIのリンクと一緒に送る、このアプリにある未送信の分（同じ日の分と、KAIに頼む前にアプリで計算した分）
+  function importExtras(imp) { return state.entries.filter((e) => !e.synced && (e.date === imp.date || e.kaiPending)); }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
     state.triedImports = state.triedImports || [];
@@ -1414,7 +1426,7 @@
       else if (params.get('ok') === '1') {
         state.home = true; // ショートカットからの戻り先は必ずSafari
         const ids = new Set((params.get('s') || '').split(',').filter(Boolean));
-        state.entries.forEach((e) => { if (ids.has(e.id)) e.synced = true; });
+        state.entries.forEach((e) => { if (ids.has(e.id)) { e.synced = true; e.kaiPending = false; } });
         save(); renderLog();
         if (importEntries(imp, true)) {
           const left = state.entries.filter((e) => !e.synced && e.date === imp.date).length;
@@ -1437,7 +1449,7 @@
       state.home = true;
       const ids = new Set(h.slice(7).split('&')[0].split(','));
       let n = 0;
-      state.entries.forEach((e) => { if (ids.has(e.id) && !e.synced) { e.synced = true; n++; } });
+      state.entries.forEach((e) => { if (ids.has(e.id) && !e.synced) { e.synced = true; e.kaiPending = false; n++; } });
       // このブラウザにない記録の送信完了（ホーム画面のWebアプリから送った分）も覚えておき、移したときに送信済みにする
       state.syncedIds = [...(state.syncedIds || []), ...[...ids].filter((id) => !state.entries.some((e) => e.id === id))].slice(-500);
       save(); renderLog();
