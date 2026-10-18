@@ -892,7 +892,7 @@
       const bal = burn != null ? eat - burn : null;
       rows.push(`<div class="dbrow"><span>差し引き${partial ? '（途中）' : ''}</span>
         <b class="${bal == null || partial ? '' : bal <= 0 ? 'good' : 'bad'}">${bal != null ? sign(bal, 0) + ' kcal' : '−'}</b>
-        <small>食べた ${Math.round(eat)}　消費 ${burn != null ? Math.round(burn) : '未取り込み'}</small></div>`);
+        <small>食べた ${Math.round(eat)}　消費 ${burn != null ? Math.round(burn) + (basalFixed(day) ? '（安静時の重複を補正した推定）' : '') : '未取り込み'}</small></div>`);
       if (partial && burn != null) rows.push(`<p class="note" style="margin:2px 0 0">消費は${isToday ? '' : 'この日の途中の'}、最後にヘルスケアから取り込んだ時点までの数字です。${isToday ? '夜に' : ''}「取り込む」を押すと、${isToday ? 'その日の結果に近づきます' : 'この日の消費が確定します'}。</p>`);
       // 確定した日は、体重の変化から逆算した実測の消費でも見せる
       const ad = !isToday && mealCount(day) >= 2 ? adaptiveTdee() : null;
@@ -1133,21 +1133,27 @@
     const app = location.href.split('#')[0];
     const time = timeFor(talk.date, talk.meal);
     const done = talk.items.map((it) => it.f.name);
+    // アプリで計算済みの分も、KAIのリンクに入れてもらう。リンクをどのブラウザで開いても全部そろって記録されるように。
+    // r= はこの依頼の印。アプリで先に記録した分と同じものがリンクに入っていても、二重に記録しないために使う
+    const kt = uid();
+    const mine = talkEntries();
+    const mineLink = mine.map((it) => '&i=' + [safeName(it.name), it.kcal, it.carb, it.fiber, it.fat, it.protein, it.alc || 0].join('~')).join('');
     const prompt = [
       '食事の栄養計算をお願いします。',
       `私の発言：「${talk.text}」`,
-      done.length ? `このうち「${done.join('、')}」は記録アプリで計算済みなので除き、残りの食べ物だけ計算してください。` : '',
+      done.length ? `このうち「${done.join('、')}」は記録アプリで計算済みです。この分は計算し直さず、記録用リンクの i= の先頭に、次の文字をそのまま（数値も変えずに）入れてください。${mineLink}` : '',
+      done.length ? 'そのうえで、残りの食べ物だけを計算して、後ろに i= を足してください。' : '',
       '品目ごとに、カロリー(kcal)、炭水化物(g)、食物繊維(g)、脂質(g)、タンパク質(g)を、日本食品標準成分表や一般的な1人前をもとに推定してください。量が不明なら一般的な1人前とし、置いた前提を短く書いてください。',
       '一覧と合計を示し、糖質（炭水化物−食物繊維）も添えてください。',
       '最後に、次の形式の記録用リンクを1本だけ、マークダウンのリンク [この内容で記録する](URL) で付けてください。',
-      `${app}#m=${talk.date}~${time}~${talk.meal}&i=食品名~kcal~炭水化物~食物繊維~脂質~タンパク質`,
-      `リンクの日付（${talk.date}）・時刻・食事区分は、上に書いたものをそのまま使い、今日の日付などに変えないでください。`,
+      `${app}#m=${talk.date}~${time}~${talk.meal}&r=${kt}&i=食品名~kcal~炭水化物~食物繊維~脂質~タンパク質`,
+      `リンクの日付（${talk.date}）・時刻・食事区分と「r=${kt}」は、上に書いたものをそのまま使い、今日の日付などに変えないでください。`,
       '1品ごとに &i= を繰り返します。数値は小数1桁まで、単位は書きません。食品名に半角スペース、半角カッコ、~ & # + は使わず、必要なら全角にしてください。',
       'お酒の場合は、タンパク質のあとに ~純アルコール量(g) を7つ目として付けてください（量ml × 度数 × 0.8）。',
     ].filter(Boolean).join('\n');
     // アプリで計算できた分は、KAIへ移る前に記録しておく（ヘルスケアへはKAIの分と一緒に送る）
     if (talk.items.length) {
-      state.entries.push(...talkEntries().map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', kaiPending: true, ...it, meal: mealOf(it, talk.meal, time) })));
+      state.entries.push(...mine.map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', kaiPending: true, kaiReq: kt, ...it, meal: mealOf(it, talk.meal, time) })));
       save(); curDate = talk.date; renderLog();
     }
     location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
@@ -1320,6 +1326,16 @@
   // 形式： #m=2026-09-22~12:30~昼食&i=から揚げ弁当~850~100~3~35~30&i=みそ汁~40~4.5~0.8~1.2~2.2
   //   m = 日付~時刻~食事区分（どれも省略可）
   //   i = 食品名~kcal~炭水化物g~食物繊維g~脂質g~タンパク質g（1品ずつ繰り返す。タンパク質は省略可）
+  const safeName = (n) => String(n).replace(/[ ()~&#+]/g, (c) => ({ ' ': '　', '(': '（', ')': '）', '~': '〜', '&': '＆', '#': '＃', '+': '＋' }[c]));
+  // KAIのリンクに入ってきた「アプリで計算済みの分」が、このブラウザにすでに記録されていれば、リンクの方は取り込まない
+  function dropKaiDup(imp) {
+    const here = state.entries.filter((e) => e.kaiReq && (imp.r ? e.kaiReq === imp.r : e.date === imp.date));
+    if (!here.length) return imp;
+    const left = here.map((e) => safeName(e.name));
+    imp.items = imp.items.filter((it) => { const k = left.indexOf(safeName(it.name)); if (k < 0) return true; left.splice(k, 1); return false; });
+    imp.dupDropped = here.length - left.length;
+    return imp;
+  }
   function hashKey(s) { let h = 5381; for (const c of s) h = ((h * 33) ^ c.codePointAt(0)) >>> 0; return h.toString(36); }
   function parseImport(params) {
     const [date, time, meal] = (params.get('m') || '').split('~');
@@ -1334,6 +1350,7 @@
       time: okTime ? time.padStart(5, '0') : hm(now),
       meal: MEALS.includes(meal) ? meal : mealByHour(okTime ? parseInt(time, 10) : now.getHours()),
       items,
+      r: params.get('r') || '',
       key: hashKey((params.get('m') || '') + '|' + params.getAll('i').join('|')),
     };
   }
@@ -1380,9 +1397,17 @@
     history.replaceState(null, '', location.pathname + location.search);
   };
   // KAIのリンクと一緒に送る、このアプリにある未送信の分（同じ日の分と、KAIに頼む前にアプリで計算した分）
-  function importExtras(imp) { return state.entries.filter((e) => !e.synced && (e.date === imp.date || e.kaiPending)); }
+  function importExtras(imp) { return state.entries.filter((e) => !e.synced && (e.date === imp.date || e.kaiPending || (imp.r && e.kaiReq === imp.r))); }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
+    if (!imp.items.length) {
+      // リンクの中身は、このブラウザにすでにある分だけだった。それを送るだけにする
+      state.imported = [...(state.imported || []), imp.key].slice(-300); save();
+      closeSheet(); pendingImport = null;
+      const extra = importExtras(imp);
+      if (extra.length) sendToHealth(extra); else toast('この内容はすでに記録済みです');
+      return;
+    }
     state.triedImports = state.triedImports || [];
     const done = (state.imported || []).includes(imp.key), tried = state.triedImports.includes(imp.key);
     if ((done || tried) && !confirm(`この記録は${done ? 'すでに取り込み済み' : '一度送信しようとしたもの'}です。\n${DUP_WARN}`)) return;
@@ -1399,7 +1424,8 @@
     runShortcut([...imp.items.map((it) => ({ ...it, date: imp.date, time: imp.time })), ...extra], p.toString());
   };
   $('impLocal').onclick = () => {
-    if (pendingImport && importEntries(pendingImport, false)) toast(`${pendingImport.items.length} 品を記録しました`);
+    if (pendingImport && !pendingImport.items.length) { state.imported = [...(state.imported || []), pendingImport.key].slice(-300); save(); toast('この内容はすでに記録済みです'); }
+    else if (pendingImport && importEntries(pendingImport, false)) toast(`${pendingImport.items.length} 品を記録しました`);
     closeSheet(); pendingImport = null;
   };
   $('impCancel').onclick = () => { closeSheet(); pendingImport = null; };
@@ -1435,6 +1461,7 @@
       }
       else {
         imp.raw = raw;
+        dropKaiDup(imp);
         openImport(imp);
         // Safari以外では、コンパスのマークからSafariへ渡せるようにリンクの中身をアドレスに残す
         if (!state.home) return;
@@ -1546,7 +1573,12 @@
   // ---------- からだの計算 ----------
   const bodyOf = (day) => state.body[day] || {};
   // 1日の消費＝安静時＋活動。安静時がない日は数字が小さすぎるので出さない
-  const burnOf = (day) => { const b = bodyOf(day); return b.basal > 0 ? b.basal + (b.active || 0) : null; };
+  // 安静時消費は大人でふつう1,200〜2,200kcal。2,600を超えるのは、Apple Watchと体組成計のアプリが同じ項目に書き込み、
+  // ヘルスケアで足し算されているとき。その日は半分にして推定する（ヘルスケア側を直して取り込み直せば自然に止まる）
+  const BASAL_DUP = 2600;
+  const basalOf = (b) => (b.basal > BASAL_DUP ? b.basal / 2 : b.basal);
+  const basalFixed = (day) => bodyOf(day).basal > BASAL_DUP;
+  const burnOf = (day) => { const b = bodyOf(day); return b.basal > 0 ? basalOf(b) + (b.active || 0) : null; };
   // 取り込みは毎回30日分を上書きするので、最後に取り込んだ日より前の日は消費が確定している。
   // 取り込んだ日以降は、その時点までの途中の数字
   const burnPartial = (day) => !state.bodyImportedAt || day >= ymd(new Date(state.bodyImportedAt));
@@ -1807,7 +1839,7 @@
     const d7 = Array.from({ length: 7 }, (_, i) => addDays(today, -(i + 1)));
     const eat = d7.filter((d) => mealCount(d) >= 2), burn = d7.filter((d) => bodyOf(d).active > 0 && bodyOf(d).basal > 0 && !burnPartial(d));
     const eatAvg = eat.length ? eat.reduce((a, d) => a + dayKcal(d), 0) / eat.length : null;
-    const burnAvg = burn.length ? burn.reduce((a, d) => a + bodyOf(d).active + bodyOf(d).basal, 0) / burn.length : null;
+    const burnAvg = burn.length ? burn.reduce((a, d) => a + burnOf(d), 0) / burn.length : null;
     const ad = adaptiveTdee();
     const lastW = latestDay(G.weight), w = lastW ? trend(lastW, G.weight) : null;
     const lastL = latestDay(G.lean), lean = lastL ? trend(lastL, G.lean) : null;
@@ -1818,7 +1850,7 @@
     // 安静時消費は大人でふつう1,200〜2,200kcal。大きく超えるのは、同じデータが2つのアプリから入って足し算されているとき
     const basalAvg = burn.length ? burn.reduce((a, d) => a + bodyOf(d).basal, 0) / burn.length : null;
     const basalWarn = basalAvg > 2600
-      ? `<div class="unknown"><b>安静時消費が1日 約${Math.round(basalAvg).toLocaleString()}kcal と、ふつうの2倍近くあります。</b>Apple Watchのほかに、体組成計のアプリなども同じ「安静時消費エネルギー」を書き込み、ヘルスケアで足し算されている可能性が高いです。この間は消費が多すぎるので、差し引きは「実測の消費」の方を参考にしてください。</div>` : '';
+      ? `<div class="unknown"><b>ヘルスケアの安静時消費が1日 約${Math.round(basalAvg).toLocaleString()}kcal と、ふつうの2倍近くあります。</b>Apple Watchのほかに、体組成計のアプリも同じ「安静時消費エネルギー」を書き込み、ヘルスケアで足し算されているためです。このアプリでは半分にして計算しています（推定）。ヘルスケア側で体組成計の書き込みを止めて取り込み直すと、補正せずに正しい数字で計算します。</div>` : '';
 
     $('energyCard').innerHTML = `
       <div class="kv"><span>食べた量（直近7日の平均）</span><span>${eatAvg != null ? Math.round(eatAvg) + ' kcal' : '−'}</span></div>
