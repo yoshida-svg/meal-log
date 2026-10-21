@@ -2491,8 +2491,8 @@
   // 記録の本体は Supabase に置く。この端末の localStorage は「すぐ表示するための控え」と「まだ送れていない変更」の置き場。
   // 最後にクラウドとそろえた内容（snap）と今の内容を行ごとに比べ、変わった行だけを送る。
   // 行ごとの上書きなので、別のタブや別の端末で同時に書いても、ほかの記録を消さない。
-  const SB_URL = '';   // 例 https://xxxx.supabase.co
-  const SB_KEY = '';   // 公開してよい鍵（publishable / anon）。アプリに書いてよい
+  const SB_URL = 'https://qcclbhalmbszxsuozpvm.supabase.co';
+  const SB_KEY = 'sb_publishable_mFQPR4AkS5Uk7Fg-76-VKw_b5yhD9vg'; // 公開してよい鍵（publishable）。アプリに書いてよい
   const CLOUD = !!(SB_URL && SB_KEY);
   const SNAP_KEY = 'mealLog.snap';
   let sb = null, session = null, pushing = null, pullTimer = null, pushTimer = null;
