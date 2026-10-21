@@ -358,6 +358,8 @@
         <div class="field" style="margin-top:10px"><input type="text" id="tokenVal" readonly></div>
         <button class="btn small" id="tokenCopy">コピー</button>
       </div>
+      <p class="note" id="tokenCount"></p>
+      <button class="linkbtn" id="tokenRevoke" hidden>いちばん新しい合言葉だけを残し、前に作った合言葉を使えなくする</button>
       <h2 class="sec">ショートカットに入れる値</h2>
       <div class="field"><label>関数の窓口（URLの先頭）</label><input type="text" id="sbUrlShow" readonly></div>
       <div class="field"><label>apikey（公開してよい鍵）</label><input type="text" id="sbKeyShow" readonly></div>
@@ -2409,6 +2411,7 @@
   // ---------- 設定 ----------
   function renderSettings() {
     renderCloud();
+    if (CLOUD && session) renderTokens();
     const s = state.settings;
     $('goalKcal').value = s.goalKcal; $('goalSugar').value = s.goalSugar; $('goalFat').value = s.goalFat; $('goalProtein').value = s.goalProtein;
     $('scName').value = s.scName; $('autoSync').checked = s.autoSync;
@@ -2764,6 +2767,25 @@
     if (error) return toast('合言葉を作れませんでした');
     $('tokenVal').value = data;
     $('tokenBox').hidden = false;
+    renderTokens();
+  };
+  // 合言葉の数を表示する（作り直したあと、古い合言葉が残っているかが分かるように）
+  async function renderTokens() {
+    if (!session) return;
+    const { data, error } = await sb.from('device_tokens').select('token_hash,created_at').order('created_at', { ascending: false });
+    if (error) return;
+    $('tokenCount').textContent = data.length
+      ? `使える合言葉は ${data.length} 個です（いちばん新しいもの：${new Date(data[0].created_at).toLocaleString('ja-JP')}）`
+      : 'まだ合言葉がありません。';
+    $('tokenRevoke').hidden = data.length < 2;
+  }
+  $('tokenRevoke').onclick = async () => {
+    const { data, error } = await sb.from('device_tokens').select('token_hash,created_at').order('created_at', { ascending: false });
+    if (error || data.length < 2) return renderTokens();
+    if (!confirm(`前に作った合言葉 ${data.length - 1} 個を使えなくします。ショートカットに、いちばん新しい合言葉が入っていることを確かめてから進めてください。よろしいですか？`)) return;
+    const { error: e2 } = await sb.from('device_tokens').delete().in('token_hash', data.slice(1).map((t) => t.token_hash));
+    toast(e2 ? '消せませんでした' : '前の合言葉を使えなくしました');
+    renderTokens();
   };
   $('tokenCopy').onclick = async () => {
     try { await navigator.clipboard.writeText($('tokenVal').value); toast('コピーしました'); }
