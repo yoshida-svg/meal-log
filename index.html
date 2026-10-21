@@ -268,6 +268,11 @@
   <div class="card daybody" id="dayBody" hidden></div>
   <div class="card"><div class="meters" id="meters"></div></div>
   <button class="talkbtn" id="talkOpen"><b>🎤</b>食べたものを話す・書く</button>
+  <div class="syncbar" id="loginBar" hidden>
+    <p>記録をクラウドに保存するには、ログインしてください。</p>
+    <button class="btn small" id="loginGo">ログイン</button>
+  </div>
+  <div class="unknown" id="cloudWarn" hidden></div>
   <div class="syncbar" id="syncbar" hidden>
     <p id="syncText"></p>
     <button class="btn small" id="syncBtn">ヘルスケアへ送る</button>
@@ -332,6 +337,34 @@
 
 <!-- 設定 -->
 <main class="wrap view" id="view-settings">
+  <section id="acctSec" hidden>
+    <h2 class="sec">アカウント（記録の保存先）</h2>
+    <div id="acctOut">
+      <p class="note">記録はクラウド（Supabase）に保存します。どのブラウザで開いても、iPhoneを替えても、同じ記録が見られます。</p>
+      <div class="field"><label>メールアドレス</label><input type="email" id="acctEmail" autocomplete="username" autocapitalize="off"></div>
+      <div class="field"><label>パスワード（8文字以上）</label><input type="password" id="acctPass" autocomplete="current-password"></div>
+      <div class="grid2"><button class="btn" id="acctLogin">ログイン</button><button class="btn ghost" id="acctSignup">新しく登録</button></div>
+      <p class="note" id="acctMsg"></p>
+    </div>
+    <div id="acctIn" hidden>
+      <div class="kv"><span>ログイン中</span><span id="acctWho"></span></div>
+      <div class="kv"><span>クラウドとの同期</span><span id="acctSync"></span></div>
+      <div style="height:6px"></div>
+      <button class="btn ghost block" id="syncNowBtn">今すぐ同期する</button>
+      <h2 class="sec">ショートカット用の合言葉</h2>
+      <p class="note">ヘルスケアとやりとりするショートカットが、ログインの代わりに使う合言葉です。作ると一度だけ表示されるので、コピーしてショートカットに貼り付けてください。なくしたら作り直せます。</p>
+      <button class="btn ghost block" id="tokenBtn">合言葉を作る</button>
+      <div id="tokenBox" hidden>
+        <div class="field" style="margin-top:10px"><input type="text" id="tokenVal" readonly></div>
+        <button class="btn small" id="tokenCopy">コピー</button>
+      </div>
+      <h2 class="sec">ショートカットに入れる値</h2>
+      <div class="field"><label>関数の窓口（URLの先頭）</label><input type="text" id="sbUrlShow" readonly></div>
+      <div class="field"><label>apikey（公開してよい鍵）</label><input type="text" id="sbKeyShow" readonly></div>
+      <button class="linkbtn" id="acctLogout">ログアウト</button>
+    </div>
+  </section>
+
   <h2 class="sec">1日の目標</h2>
   <div class="grid2">
     <div class="field"><label>カロリー（kcal）</label><input type="number" inputmode="numeric" id="goalKcal"></div>
@@ -358,7 +391,7 @@
   <div class="field"><label>取り込み用ショートカットの名前</label><input type="text" id="readScName"></div>
   <div class="field"><label>送信用ショートカットの名前（iPhoneで作った名前と完全に同じにする）</label><input type="text" id="scName"></div>
   <label class="check"><input type="checkbox" id="autoSync"> 記録したらすぐヘルスケアへ送る</label>
-  <p class="note">オフのときは、記録画面の「ヘルスケアへ送る」ボタンでまとめて送ります。送信に成功した記録には緑の点がつきます。</p>
+  <p class="note">オンにすると、記録するたびにショートカットへ一瞬切り替わって送ります。オフでも、送信用ショートカットを毎晩自動で動かしておけば、その日の分はまとめて送られます。送信済みの記録には緑の点がつきます。</p>
   <button class="linkbtn" id="showGuide">ショートカットの作り方を見る</button>
 
   <h2 class="sec">マイ食品</h2>
@@ -500,7 +533,7 @@
     <div id="impItems"></div>
     <div class="calc" id="impTotal" style="margin-top:12px"></div>
     <div id="impOutside" hidden>
-      <div class="unknown">この画面はSafariではありません（Claudeアプリの中のブラウザなど）。ここで記録すると、音声で入れた記録と別の場所に保存されてしまいます。Safariで開き直してから記録してください。</div>
+      <div class="unknown" id="impOutsideMsg"></div>
       <button class="btn block" id="impSafari">Safariで開く</button>
       <p class="note">開かないときは、画面右下のコンパスのマーク（Safariで開く）を押してください。</p>
       <button class="linkbtn" id="impHereSafari">いま開いているのはSafariなので、ここで記録する</button>
@@ -518,13 +551,21 @@
 <section class="sheet" id="guideSheet">
   <div class="wrap">
     <div class="grab"></div>
-    <h3>ショートカットの作り方</h3>
-    <p class="note">最初に一度だけ作ります。10分ほどかかります。</p>
+    <h3>送信用ショートカットの作り方</h3>
+    <p class="note">クラウドから、まだヘルスケアに送っていない記録を読み、ヘルスケアに書き込んで、1品ずつ送信済みにするショートカットです。今ある <code id="gName"></code> を作り直します。設定画面の「ショートカット用の合言葉」を先に作っておいてください。</p>
     <ol class="steps">
-      <li>iPhoneの「ショートカット」アプリを開き、右上の＋で新規作成。名前を <code id="gName"></code> にする。</li>
-      <li>アクション「入力から辞書を取得」を追加。入力は「ショートカットの入力」。</li>
-      <li>アクション「各項目を繰り返す」を追加。対象は前の手順の「辞書」。</li>
-      <li>繰り返しの中に、次の順で追加する。
+      <li>ショートカットアプリで <code class="gSendName"></code> を開く。いちばん上の「入力から辞書を取得」は「×」で消す。</li>
+      <li>いちばん上に「テキスト」を追加し、合言葉を貼り付ける。すぐ下に「変数を設定」を追加し、変数名を <code>token</code> にする。</li>
+      <li>その下に「URLの内容を取得」を追加する。
+        <ol>
+          <li>URL は <code class="gSbBase"></code><code>health_pending</code></li>
+          <li>「詳細を表示」で、方法を「POST」にする</li>
+          <li>ヘッダを2つ追加する。<code>apikey</code> の値に <code class="gSbKey"></code>、<code>Content-Type</code> の値に <code>application/json</code></li>
+          <li>要求本文は「JSON」。フィールドを追加し、キー <code>p_token</code>、値に変数 <code>token</code></li>
+        </ol>
+      </li>
+      <li>「各項目を繰り返す」の対象を「URLの内容」に変える。</li>
+      <li>繰り返しの中は、今のまま次の順になっていればよい。
         <ol>
           <li>「辞書の値を取得」キー <code>date</code>（入力は「繰り返し項目」）</li>
           <li>「辞書の値を取得」キー <code>kcal</code>（入力は「繰り返し項目」）</li>
@@ -535,8 +576,15 @@
           <li>同じように <code>fiber</code> を取得して、種類 食物繊維、単位 g で記録</li>
         </ol>
       </li>
-      <li>右上の完了で保存。最初の実行時にヘルスケアへの書き込み許可を聞かれるので「許可」する。</li>
+      <li>繰り返しの中のいちばん下（「繰り返しの終了」の上）に、次の2つを足す。
+        <ol>
+          <li>「辞書の値を取得」キー <code>id</code>（入力は「繰り返し項目」）</li>
+          <li>「URLの内容を取得」。URL は <code class="gSbBase"></code><code>health_mark_synced</code>。方法とヘッダは手順3と同じ。要求本文の JSON は <code>p_token</code> に変数 <code>token</code>、<code>p_id</code> に「辞書の値」</li>
+        </ol>
+      </li>
+      <li>完了で保存。毎晩自動で送るには、「オートメーション」で「時刻」を選び、夜（たとえば22時）にこのショートカットを「すぐに実行」にする。</li>
     </ol>
+    <p class="note">1品ヘルスケアに書くたびに、その1品だけを送信済みにします。途中で止まっても、送れた分だけが送信済みになるので、次に動かしたとき重複しません。</p>
     <p class="note">ヘルスケアには「糖質」の項目がないため、炭水化物と食物繊維を送ります。糖質は炭水化物から食物繊維を引いた値です。このアプリでは糖質で表示しています。</p>
     <p class="note">送ったあとで記録を削除・修正しても、ヘルスケア側は自動では変わりません。ヘルスケアアプリの「栄養」から該当データを削除してください。</p>
     <button class="btn block ghost" id="closeGuide">閉じる</button>
@@ -596,9 +644,14 @@
         </ol>
       </li>
       <li>最後に「テキストを結合」を追加し、入力は変数 <code>rows</code>、区切りは「改行」。</li>
-      <li>「URLエンコード」を追加する（入力は結合したテキスト）。</li>
-      <li>「URL」を追加し、<code id="gHealthUrl"></code> と入れたすぐ後ろに、変数「URLエンコードしたテキスト」を入れる。</li>
-      <li>「URLを開く」を追加して完了。最初の実行でヘルスケアの読み出し許可を聞かれるので、すべて「許可」する。</li>
+      <li>（クラウドで使うとき）「URLエンコード」「テキスト（アドレス）」「URLを開く」があれば「×」で消し、代わりに次を足す。
+        <ol>
+          <li>いちばん上に「テキスト」を追加して合言葉を貼り付け、すぐ下に「変数を設定」（変数名 <code>token</code>）</li>
+          <li>いちばん下に「URLの内容を取得」。URL は <code class="gSbBase"></code><code>health_push</code>、方法は「POST」、ヘッダは <code>apikey</code> に <code class="gSbKey"></code> と <code>Content-Type</code> に <code>application/json</code>。要求本文の JSON は <code>p_token</code> に変数 <code>token</code>、<code>p_text</code> に「結合済みのテキスト」</li>
+        </ol>
+        Safariが開かなくなり、裏で静かに送るだけになります。アプリを開いたときに反映されます。
+      </li>
+      <li>（クラウドを使わないとき）「URLエンコード」を追加し、「URL」に <code id="gHealthUrl"></code> と変数「URLエンコードしたテキスト」をつなげて入れ、「URLを開く」。</li>
     </ol>
     <p class="note">グループ化を忘れると、消費カロリーが細切れで大量に届きます（アプリ側で日ごとに足すので結果は同じですが、遅くなります）。</p>
     <p class="note">過去の分をまとめて入れたいときは、最初の1回だけ「過去の」を「90」日にして実行し、そのあと30日に戻してください。</p>
@@ -787,6 +840,7 @@
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { toast('保存できませんでした'); }
+    try { schedulePush(); } catch (e) {} // 起動の途中（クラウドの準備前）に呼ばれたときは何もしない
   }
   state = load();
 
@@ -917,12 +971,13 @@
       alcMeter(t.alc);
     renderDayBody(t.kcal);
 
-    const unsynced = state.entries.filter((e) => !e.synced);
+    const unsynced = state.entries.filter((e) => !e.synced && (!CLOUD || e.kcal > 0));
     $('syncbar').hidden = unsynced.length === 0;
     const unsyncedDays = [...new Set(unsynced.map((e) => e.date))].sort().map((d) => { const x = parseYmd(d); return `${x.getMonth() + 1}/${x.getDate()}`; });
     const triedN = unsynced.filter((e) => e.sendTried).length;
     $('syncText').textContent = `ヘルスケアに未送信 ${unsynced.length} 件（${unsyncedDays.slice(0, 4).join('・')}${unsyncedDays.length > 4 ? 'ほか' : ''}）`
-      + (triedN ? `。うち ${triedN} 件は送ったあと結果が戻らなかった分です` : '');
+      + (triedN && !CLOUD ? `。うち ${triedN} 件は送ったあと結果が戻らなかった分です` : '');
+    $('syncBtn').textContent = CLOUD && session ? '今すぐ送る' : 'ヘルスケアへ送る';
 
     $('meals').innerHTML = MEALS.map((m) => {
       const items = list.filter((e) => e.meal === m);
@@ -964,7 +1019,8 @@
     state.entries.push(...added); save(); curDate = date; closeSheet(); renderLog();
     // 自動送信のときは、今回の分に加えて、これまで送り忘れていた分（一度も送っていないもの）も一緒に送る。
     // 一度送ろうとして結果が戻らなかった分は、ヘルスケアに入っている可能性があるので、ここでは送らない（重複を防ぐ）
-    if (state.settings.autoSync) sendToHealth([...added, ...state.entries.filter((e) => !e.synced && !e.sendTried && !added.includes(e))]);
+    if (state.settings.autoSync && CLOUD && session) runHealthShortcut();
+    else if (state.settings.autoSync) sendToHealth([...added, ...state.entries.filter((e) => !e.synced && !e.sendTried && !added.includes(e))]);
     else toast(added.length === 1 ? `${added[0].name} を記録しました` : `${added.length} 品を記録しました`);
   }
   function timeFor(date, meal) {
@@ -1133,16 +1189,14 @@
     const app = location.href.split('#')[0];
     const time = timeFor(talk.date, talk.meal);
     const done = talk.items.map((it) => it.f.name);
-    // アプリで計算済みの分も、KAIのリンクに入れてもらう。リンクをどのブラウザで開いても全部そろって記録されるように。
-    // r= はこの依頼の印。アプリで先に記録した分と同じものがリンクに入っていても、二重に記録しないために使う
+    // アプリで計算できた分は、先に記録してクラウドへ送る。KAIには残りだけを計算してもらう。
+    // r= はこの依頼の印。KAIがアプリで計算済みの分までリンクに入れてきても、二重に記録しないために使う
     const kt = uid();
     const mine = talkEntries();
-    const mineLink = mine.map((it) => '&i=' + [safeName(it.name), it.kcal, it.carb, it.fiber, it.fat, it.protein, it.alc || 0].join('~')).join('');
     const prompt = [
       '食事の栄養計算をお願いします。',
       `私の発言：「${talk.text}」`,
-      done.length ? `このうち「${done.join('、')}」は記録アプリで計算済みです。この分は計算し直さず、記録用リンクの i= の先頭に、次の文字をそのまま（数値も変えずに）入れてください。${mineLink}` : '',
-      done.length ? 'そのうえで、残りの食べ物だけを計算して、後ろに i= を足してください。' : '',
+      done.length ? `このうち「${done.join('、')}」は記録アプリで計算・記録済みなので除き、残りの食べ物だけ計算してください。記録用リンクにも入れないでください。` : '',
       '品目ごとに、カロリー(kcal)、炭水化物(g)、食物繊維(g)、脂質(g)、タンパク質(g)を、日本食品標準成分表や一般的な1人前をもとに推定してください。量が不明なら一般的な1人前とし、置いた前提を短く書いてください。',
       '一覧と合計を示し、糖質（炭水化物−食物繊維）も添えてください。',
       '最後に、次の形式の記録用リンクを1本だけ、マークダウンのリンク [この内容で記録する](URL) で付けてください。',
@@ -1156,7 +1210,9 @@
       state.entries.push(...mine.map((it) => ({ id: uid(), date: talk.date, time, synced: false, unit: '', kaiPending: true, kaiReq: kt, ...it, meal: mealOf(it, talk.meal, time) })));
       save(); curDate = talk.date; renderLog();
     }
-    location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt);
+    const go = () => { location.href = 'https://claude.ai/new?q=' + encodeURIComponent(prompt); };
+    // クラウドに送り終えてからKAIへ移る（移ったあとは、この画面が止まることがあるため）
+    if (CLOUD && session) pushNow().finally(go); else go();
   };
 
   // ---------- 追加（マイ食品・手入力） ----------
@@ -1259,8 +1315,12 @@
   }
   // 開いている間にほかのタブの保存で読み直していても、今の記録を id で探し直して直す
   const refindEditing = () => (editing = state.entries.find((e) => e.id === editing.id) || editing);
-  $('eUnsync').onclick = () => {
+  $('eUnsync').onclick = async () => {
     refindEditing();
+    if (CLOUD && session) {
+      const { error } = await sb.rpc('health_unsync', { p_id: editing.id });
+      if (error) return toast('クラウドにつながりませんでした');
+    }
     editing.synced = false; editing.sendTried = false;
     save(); closeSheet(); renderLog(); toast('未送信に戻しました');
   };
@@ -1320,7 +1380,7 @@
     entries.forEach((e) => (e.sendTried = true)); save();
     runShortcut(entries, `synced=${entries.map((e) => e.id).join(',')}`);
   }
-  $('syncBtn').onclick = () => sendToHealth(state.entries.filter((e) => !e.synced));
+  $('syncBtn').onclick = () => (CLOUD && session ? runHealthShortcut() : sendToHealth(state.entries.filter((e) => !e.synced)));
 
   // ---------- KAIのリンクからの取り込み ----------
   // 形式： #m=2026-09-22~12:30~昼食&i=から揚げ弁当~850~100~3~35~30&i=みそ汁~40~4.5~0.8~1.2~2.2
@@ -1379,8 +1439,15 @@
         <span class="kc">${Math.round(e.kcal)} kcal</span></div>`).join('') : '';
     $('impTotal').textContent = totalText(totals([...imp.items, ...extra]));
     // Safari以外（Claudeアプリ内のブラウザなど）で開いたときは、Safariへ渡す
-    $('impOutside').hidden = !!state.home;
-    $('impInside').hidden = !state.home;
+    const canRecord = CLOUD ? !!session : !!state.home;
+    $('impOutside').hidden = canRecord;
+    $('impInside').hidden = !canRecord;
+    $('impOutsideMsg').textContent = CLOUD
+      ? 'このブラウザではログインしていないので、ここでは記録できません。いつも使っているSafariで開いて記録してください。'
+      : 'この画面はSafariではありません（Claudeアプリの中のブラウザなど）。ここで記録すると、音声で入れた記録と別の場所に保存されてしまいます。Safariで開き直してから記録してください。';
+    $('impHereSafari').hidden = CLOUD;
+    $('impSend').textContent = CLOUD ? '記録する' : '記録してヘルスケアへ送る';
+    $('impLocal').hidden = CLOUD;
     openSheet($('importSheet'));
   }
   $('impSafari').onclick = () => {
@@ -1398,8 +1465,25 @@
   };
   // KAIのリンクと一緒に送る、このアプリにある未送信の分（同じ日の分と、KAIに頼む前にアプリで計算した分）
   function importExtras(imp) { return state.entries.filter((e) => !e.synced && (e.date === imp.date || e.kaiPending || (imp.r && e.kaiReq === imp.r))); }
+  // クラウドのとき：同じリンクを2回取り込まないよう、クラウドに印を付けてから記録する。
+  // 記録の id はリンクの中身から決まるので、途中で止まって押し直しても重複しない
+  async function cloudImport(imp) {
+    if (!imp.items.length) { closeSheet(); pendingImport = null; return toast('この内容はすでに記録済みです'); }
+    let fresh;
+    try { fresh = await claimKaiKey(imp.key); } catch (e) { return toast('クラウドにつながりませんでした。もう一度押してください'); }
+    closeSheet(); pendingImport = null;
+    if (!fresh) return toast('この記録はすでに取り込み済みです');
+    imp.items.forEach((it, i) => {
+      const id = `k${imp.key}_${i}`;
+      if (!state.entries.some((e) => e.id === id)) state.entries.push({ id, date: imp.date, time: imp.time, unit: '', synced: false, ...it, meal: mealOf(it, imp.meal, imp.time) });
+    });
+    save(); curDate = imp.date; renderLog();
+    await pushNow();
+    if (state.settings.autoSync) runHealthShortcut(); else toast(`${imp.items.length} 品を記録しました`);
+  }
   $('impSend').onclick = () => {
     const imp = pendingImport; if (!imp) return;
+    if (CLOUD) return cloudImport(imp);
     if (!imp.items.length) {
       // リンクの中身は、このブラウザにすでにある分だけだった。それを送るだけにする
       state.imported = [...(state.imported || []), imp.key].slice(-300); save();
@@ -1463,8 +1547,8 @@
         imp.raw = raw;
         dropKaiDup(imp);
         openImport(imp);
-        // Safari以外では、コンパスのマークからSafariへ渡せるようにリンクの中身をアドレスに残す
-        if (!state.home) return;
+        // 記録できないブラウザでは、コンパスのマークからSafariへ渡せるようにリンクの中身をアドレスに残す
+        if (CLOUD ? !session : !state.home) return;
       }
       history.replaceState(null, '', location.pathname + location.search);
       return;
@@ -1526,6 +1610,15 @@
   function importHealth(encoded) {
     let text = encoded;
     try { text = decodeURIComponent(encoded); } catch (e) {}
+    const count = applyHealthText(text);
+    if (!count) { toast('取り込めるデータがありませんでした'); showView('body'); return; }
+    state.bodyImportedAt = new Date().toISOString();
+    save();
+    showView('body');
+    toast(count.weight ? `体重 ${count.weight}日分などを取り込みました` : `${Object.keys(count).map((k) => HK_LABEL[k]).join('・')}を取り込みました`);
+  }
+  // 「種類 開始日 = 値」の行を読み、日ごとのからだの記録に入れる。入れた件数を返す（なければ null）
+  function applyHealthText(text) {
     const agg = {};
     text.split(/\r\n|\n|\r/).forEach((line) => {
       const eq = line.lastIndexOf('=');
@@ -1544,11 +1637,7 @@
       else if (!d[type] || when.min < d[type].min) d[type] = { v, min: when.min }; // 1日に何回か測ったら朝いちばんの値
     });
     const days = Object.keys(agg);
-    if (!days.length) {
-      toast('取り込めるデータがありませんでした');
-      showView('body');
-      return;
-    }
+    if (!days.length) return null;
     const count = {};
     days.forEach((day) => {
       const b = (state.body[day] ||= {});
@@ -1557,15 +1646,13 @@
         count[k] = (count[k] || 0) + 1;
       });
     });
-    state.bodyImportedAt = new Date().toISOString();
-    save();
-    showView('body');
-    toast(count.weight ? `体重 ${count.weight}日分などを取り込みました` : `${Object.keys(count).map((k) => HK_LABEL[k]).join('・')}を取り込みました`);
+    return count;
   }
   $('hkBtn').onclick = () => { location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(state.settings.readScName); };
   $('hkGuideBtn').onclick = () => {
     document.querySelectorAll('.gReadName').forEach((el) => (el.textContent = state.settings.readScName));
     $('gHealthUrl').textContent = location.href.split('#')[0] + '#health=';
+    fillGuideValues();
     openSheet($('hkGuideSheet'));
   };
   $('closeHkGuide').onclick = closeSheet;
@@ -2321,6 +2408,7 @@
 
   // ---------- 設定 ----------
   function renderSettings() {
+    renderCloud();
     const s = state.settings;
     $('goalKcal').value = s.goalKcal; $('goalSugar').value = s.goalSugar; $('goalFat').value = s.goalFat; $('goalProtein').value = s.goalProtein;
     $('scName').value = s.scName; $('autoSync').checked = s.autoSync;
@@ -2350,7 +2438,12 @@
   $('pace').onchange = () => { state.settings.pace = Math.min(1.5, Math.max(0.1, r1(num($('pace').value)) || DEFAULT_SETTINGS.pace)); save(); renderSettings(); };
   $('alcMax').onchange = () => { state.settings.alcMax = Math.max(0, Math.round(num($('alcMax').value))); save(); };
   $('alcFreeDays').onchange = () => { state.settings.alcFreeDays = Math.min(7, Math.max(0, Math.round(num($('alcFreeDays').value)))); save(); renderSettings(); };
-  $('showGuide').onclick = () => { $('gName').textContent = state.settings.scName; openSheet($('guideSheet')); };
+  function fillGuideValues() {
+    document.querySelectorAll('.gSbBase').forEach((el) => (el.textContent = CLOUD ? `${SB_URL}/rest/v1/rpc/` : '（クラウド未設定）'));
+    document.querySelectorAll('.gSbKey').forEach((el) => (el.textContent = CLOUD ? SB_KEY : '（クラウド未設定）'));
+    document.querySelectorAll('.gSendName').forEach((el) => (el.textContent = state.settings.scName));
+  }
+  $('showGuide').onclick = () => { $('gName').textContent = state.settings.scName; fillGuideValues(); openSheet($('guideSheet')); };
   $('closeGuide').onclick = closeSheet;
 
   function download(obj, name) {
@@ -2393,6 +2486,290 @@
     $('importFile').value = '';
   };
 
+
+  // ========== クラウド（Supabase）との同期 ==========
+  // 記録の本体は Supabase に置く。この端末の localStorage は「すぐ表示するための控え」と「まだ送れていない変更」の置き場。
+  // 最後にクラウドとそろえた内容（snap）と今の内容を行ごとに比べ、変わった行だけを送る。
+  // 行ごとの上書きなので、別のタブや別の端末で同時に書いても、ほかの記録を消さない。
+  const SB_URL = '';   // 例 https://xxxx.supabase.co
+  const SB_KEY = '';   // 公開してよい鍵（publishable / anon）。アプリに書いてよい
+  const CLOUD = !!(SB_URL && SB_KEY);
+  const SNAP_KEY = 'mealLog.snap';
+  let sb = null, session = null, pushing = null, pullTimer = null, pushTimer = null;
+  const cloud = { lastSync: null, error: '' };
+  let snap = loadSnap();
+  function loadSnap() {
+    try { const x = JSON.parse(localStorage.getItem(SNAP_KEY)); if (x && x.entries) return x; } catch (e) {}
+    return { uid: null, entries: {}, body: {}, foods: {}, settings: null };
+  }
+  function saveSnap() { try { localStorage.setItem(SNAP_KEY, JSON.stringify(snap)); } catch (e) {} }
+
+  // アプリの形 ⇔ データベースの行
+  const entryRow = (e) => ({
+    id: e.id, date: e.date, time: e.time || '12:00', meal: e.meal, name: e.name, unit: e.unit || '',
+    kcal: +e.kcal || 0, carb: +e.carb || 0, fiber: +e.fiber || 0, fat: +e.fat || 0, protein: +e.protein || 0, alc: +e.alc || 0,
+    alc_est: !!e.alcEst, food_id: e.foodId || null, kai_req: e.kaiReq || null,
+  });
+  const entryFrom = (r) => {
+    const e = { id: r.id, date: r.date, time: r.time, meal: r.meal, name: r.name, unit: r.unit,
+      kcal: +r.kcal, carb: +r.carb, fiber: +r.fiber, fat: +r.fat, protein: +r.protein, alc: +r.alc, synced: !!r.health_synced_at };
+    if (r.alc_est) e.alcEst = true;
+    if (r.food_id) e.foodId = r.food_id;
+    if (r.kai_req) e.kaiReq = r.kai_req;
+    return e;
+  };
+  const BODY_KEYS = ['weight', 'fat', 'active', 'basal', 'steps', 'lift', 'muscle', 'waist'];
+  const bodyRow = (date, b) => Object.fromEntries([['date', date], ...BODY_KEYS.map((k) => [k, b[k] == null || b[k] === false ? null : b[k] === true ? 1 : +b[k]])]);
+  const bodyFrom = (r) => Object.fromEntries(BODY_KEYS.filter((k) => r[k] != null).map((k) => [k, +r[k]]));
+  const foodRow = (f) => { const { id, ...data } = f; return { id, data }; };
+  const J = (x) => JSON.stringify(x);
+  const chunks = (a, n) => { const out = []; for (let i = 0; i < a.length; i += n) out.push(a.slice(i, i + n)); return out; };
+
+  // この端末で変えたのに、まだクラウドに送れていない行
+  function changes() {
+    const e = state.entries.filter((x) => snap.entries[x.id] !== J(entryRow(x)));
+    const eGone = Object.keys(snap.entries).filter((id) => !state.entries.some((x) => x.id === id));
+    const b = Object.keys(state.body).filter((d) => snap.body[d] !== J(bodyRow(d, state.body[d])));
+    const f = state.foods.filter((x) => snap.foods[x.id] !== J(foodRow(x)));
+    const fGone = Object.keys(snap.foods).filter((id) => !state.foods.some((x) => x.id === id));
+    const st = snap.settings !== J(state.settings);
+    return { e, eGone, b, f, fGone, st, n: e.length + eGone.length + b.length + f.length + fGone.length + (st ? 1 : 0) };
+  }
+
+  async function pushNow() {
+    if (!session) return;
+    if (pushing) return pushing;
+    pushing = (async () => {
+      const c = changes(), uidv = session.user.id;
+      if (!c.n) return;
+      const now = new Date().toISOString();
+      // ヘルスケアに送信済みの記録は、その印も一緒に送る（引っ越しのとき、送信済みの分を送り直して重複させないため）。
+      // 未送信の記録は印の列を送らない（クラウド側でショートカットが付けた印を、古い内容で消さないため）。
+      // 列の違う行を一度に送ると、足りない列が空で上書きされるので、2つに分けて送る
+      for (const group of [c.e.filter((x) => x.synced), c.e.filter((x) => !x.synced)]) {
+        for (const part of chunks(group, 200)) {
+          const rows = part.map((x) => ({ user_id: uidv, ...entryRow(x), deleted_at: null, ...(x.synced ? { health_synced_at: now } : {}) }));
+          const { error } = await sb.from('entries').upsert(rows, { onConflict: 'user_id,id' });
+          if (error) throw error;
+          part.forEach((x) => (snap.entries[x.id] = J(entryRow(x))));
+        }
+      }
+      for (const part of chunks(c.eGone, 200)) {
+        const { error } = await sb.from('entries').update({ deleted_at: now }).in('id', part);
+        if (error) throw error;
+        part.forEach((id) => delete snap.entries[id]);
+      }
+      for (const part of chunks(c.b, 200)) {
+        const { error } = await sb.from('body_days').upsert(part.map((d) => ({ user_id: uidv, ...bodyRow(d, state.body[d]) })), { onConflict: 'user_id,date' });
+        if (error) throw error;
+        part.forEach((d) => (snap.body[d] = J(bodyRow(d, state.body[d]))));
+      }
+      for (const part of chunks(c.f, 200)) {
+        const { error } = await sb.from('foods').upsert(part.map((x) => ({ user_id: uidv, ...foodRow(x), deleted_at: null })), { onConflict: 'user_id,id' });
+        if (error) throw error;
+        part.forEach((x) => (snap.foods[x.id] = J(foodRow(x))));
+      }
+      for (const part of chunks(c.fGone, 200)) {
+        const { error } = await sb.from('foods').update({ deleted_at: now }).in('id', part);
+        if (error) throw error;
+        part.forEach((id) => delete snap.foods[id]);
+      }
+      if (c.st) {
+        const { error } = await sb.from('settings').upsert({ user_id: uidv, data: state.settings }, { onConflict: 'user_id' });
+        if (error) throw error;
+        snap.settings = J(state.settings);
+      }
+    })();
+    try { await pushing; cloud.error = ''; cloud.lastSync = new Date(); }
+    catch (e) { cloud.error = e.message || String(e); console.warn(e); }
+    finally { saveSnap(); pushing = null; renderCloud(); }
+  }
+  function schedulePush() { if (!session) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 400); }
+
+  async function fetchAll(table, cols, order, filter) {
+    let all = [];
+    for (let from = 0; ; from += 1000) {
+      let q = sb.from(table).select(cols);
+      if (filter) q = filter(q);
+      const { data, error } = await q.order(order).range(from, from + 999);
+      if (error) throw error;
+      all = all.concat(data);
+      if (data.length < 1000) return all;
+    }
+  }
+  // クラウドの内容に合わせる。ただし、この端末で直してまだ送っていない行は、この端末の内容を残す（そのあと送る）
+  function mergeRows(localList, keyOf, toRowJ, remoteMap, fromRow, snapPart) {
+    const local = new Map(localList.map((x) => [keyOf(x), x]));
+    const out = [], nextSnap = {};
+    remoteMap.forEach((r, k) => {
+      const l = local.get(k);
+      if (l && snapPart[k] !== toRowJ(l)) { out.push([k, l, r]); if (snapPart[k] !== undefined) nextSnap[k] = snapPart[k]; }
+      else { const x = fromRow(r); out.push([k, x, r]); nextSnap[k] = toRowJ(x); }
+    });
+    local.forEach((l, k) => {
+      if (remoteMap.has(k)) return;
+      // クラウドで消された行（この端末では手を付けていない）は消す。この端末で新しく作った・直した行は残す
+      if (!(snapPart[k] !== undefined && snapPart[k] === toRowJ(l))) out.push([k, l, null]);
+    });
+    return { out, nextSnap };
+  }
+
+  let pulling = null;
+  async function pullNow() {
+    if (!session) return;
+    if (pulling) return pulling;
+    pulling = (async () => {
+      await pushNow();
+      const [er, br, fr, sr] = await Promise.all([
+        fetchAll('entries', 'id,date,time,meal,name,unit,kcal,carb,fiber,fat,protein,alc,alc_est,food_id,kai_req,health_synced_at', 'id', (q) => q.is('deleted_at', null)),
+        fetchAll('body_days', 'date,' + BODY_KEYS.join(','), 'date'),
+        fetchAll('foods', 'id,data', 'id', (q) => q.is('deleted_at', null)),
+        sb.from('settings').select('data').maybeSingle(),
+      ]);
+      if (sr.error) throw sr.error;
+      const E = mergeRows(state.entries, (x) => x.id, (x) => J(entryRow(x)), new Map(er.map((r) => [r.id, r])), entryFrom, snap.entries);
+      state.entries = E.out.map(([, x, r]) => (r ? { ...x, synced: !!r.health_synced_at } : x));
+      snap.entries = E.nextSnap;
+      const B = mergeRows(Object.keys(state.body).map((d) => ({ d, ...state.body[d] })), (x) => x.d, (x) => J(bodyRow(x.d, x)),
+        new Map(br.map((r) => [r.date, r])), (r) => ({ d: r.date, ...bodyFrom(r) }), snap.body);
+      state.body = Object.fromEntries(B.out.map(([d, x]) => { const { d: _d, ...rest } = x; return [d, rest]; }));
+      snap.body = B.nextSnap;
+      const F = mergeRows(state.foods, (x) => x.id, (x) => J(foodRow(x)), new Map(fr.map((r) => [r.id, r])), (r) => ({ id: r.id, ...r.data }), snap.foods);
+      state.foods = F.out.map(([, x]) => x);
+      snap.foods = F.nextSnap;
+      if (sr.data && sr.data.data && snap.settings === J(state.settings)) {
+        state.settings = { ...DEFAULT_SETTINGS, ...sr.data.data };
+        snap.settings = J(state.settings);
+      }
+      // ショートカットが置いていった、ヘルスケアのデータを反映する
+      const { data: hi, error: he } = await sb.from('health_imports').select('id,text').is('processed_at', null).order('id');
+      if (he) throw he;
+      (hi || []).forEach((h) => applyHealthText(h.text));
+      if (hi && hi.length) {
+        const { error } = await sb.from('health_imports').update({ processed_at: new Date().toISOString() }).in('id', hi.map((h) => h.id));
+        if (error) throw error;
+      }
+      const { data: last } = await sb.from('health_imports').select('received_at').order('received_at', { ascending: false }).limit(1);
+      if (last && last[0]) state.bodyImportedAt = last[0].received_at;
+      snap.uid = session.user.id;
+      saveSnap();
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      await pushNow(); // ヘルスケアから反映したからだの記録などを送る
+      return hi && hi.length;
+    })();
+    try {
+      const got = await pulling;
+      cloud.error = ''; cloud.lastSync = new Date();
+      rerender();
+      if (got) toast('ヘルスケアのデータを反映しました');
+    } catch (e) { cloud.error = e.message || String(e); console.warn(e); renderCloud(); }
+    finally { pulling = null; }
+  }
+
+  function rerender() {
+    renderLog();
+    if ($('view-body').classList.contains('on')) renderBody();
+    if ($('view-history').classList.contains('on')) renderHistory();
+    if ($('view-settings').classList.contains('on')) renderSettings();
+    renderCloud();
+  }
+  function renderCloud() {
+    if (!CLOUD) return;
+    $('acctSec').hidden = false;
+    $('acctOut').hidden = !!session;
+    $('acctIn').hidden = !session;
+    $('loginBar').hidden = !!session;
+    if (!session) { $('cloudWarn').hidden = true; return; }
+    const n = changes().n;
+    $('acctWho').textContent = session.user.email || '';
+    $('acctSync').textContent = cloud.error ? 'うまく同期できていません' : n ? `送信待ち ${n}件` : cloud.lastSync ? `最新（${hm(cloud.lastSync)}）` : '確認中';
+    $('cloudWarn').hidden = !cloud.error;
+    $('cloudWarn').textContent = `クラウドに保存できていない変更があります（${n}件）。電波のよいところで開き直すと、自動で送ります。`;
+    $('sbUrlShow').value = `${SB_URL}/rest/v1/rpc/`;
+    $('sbKeyShow').value = SB_KEY;
+  }
+
+  // ヘルスケアへの送信は、ショートカットがクラウドから未送信の分を読んで書き込み、1品ずつ送信済みにする。
+  // アプリはショートカットを起動するだけ（戻ってこなくても、送信済みの印はクラウドに付いている）
+  async function runHealthShortcut() {
+    await pushNow();
+    const back = location.href.split('#')[0];
+    location.href = 'shortcuts://x-callback-url/run-shortcut?name=' + encodeURIComponent(state.settings.scName)
+      + '&x-success=' + encodeURIComponent(`${back}#view=${curDate}`)
+      + '&x-error=' + encodeURIComponent(`${back}#syncerror&view=${curDate}`)
+      + '&x-cancel=' + encodeURIComponent(`${back}#view=${curDate}`);
+  }
+
+  // KAIのリンクを、同じ内容で2回取り込まないための印をクラウドに付ける（付けられたら true、もう付いていたら false）
+  async function claimKaiKey(key) {
+    const { error } = await sb.from('kai_imports').insert({ user_id: session.user.id, key });
+    if (!error) return true;
+    if (error.code === '23505') return false;
+    throw error;
+  }
+
+  async function startCloud() {
+    if (!CLOUD) return;
+    $('acctSec').hidden = false;
+    try {
+      const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+      sb = mod.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+      const { data } = await sb.auth.getSession();
+      setSession(data.session);
+      sb.auth.onAuthStateChange((_ev, s) => setSession(s));
+    } catch (e) { cloud.error = 'クラウドにつながりませんでした'; console.warn(e); }
+    renderCloud();
+  }
+  function setSession(s) {
+    const was = session && session.user.id;
+    session = s || null;
+    renderCloud();
+    if (!session) { clearInterval(pullTimer); return; }
+    if (was === session.user.id) return;
+    // 別の人の記録が端末に残っていたら持ち込まない（最初のログインのときだけ、端末の記録をクラウドへ引っ越す）
+    if (snap.uid && snap.uid !== session.user.id) {
+      state = normalizeState({ foodsVer: FOODS_VER, home: true });
+      snap = { uid: session.user.id, entries: {}, body: {}, foods: {}, settings: null };
+    }
+    pullNow();
+    clearInterval(pullTimer);
+    pullTimer = setInterval(() => { if (document.visibilityState === 'visible') pullNow(); }, 5 * 60 * 1000);
+  }
+
+  // アカウントの画面
+  $('acctLogin').onclick = async () => {
+    if (!sb) return toast('クラウドにつながっていません');
+    $('acctMsg').textContent = 'ログインしています…';
+    const { error } = await sb.auth.signInWithPassword({ email: $('acctEmail').value.trim(), password: $('acctPass').value });
+    $('acctMsg').textContent = error ? `ログインできませんでした（${error.message}）` : '';
+    if (!error) toast('ログインしました。記録をクラウドとそろえます');
+  };
+  $('acctSignup').onclick = async () => {
+    if (!sb) return toast('クラウドにつながっていません');
+    const email = $('acctEmail').value.trim(), password = $('acctPass').value;
+    if (password.length < 8) { $('acctMsg').textContent = 'パスワードは8文字以上にしてください'; return; }
+    const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.href.split('#')[0] } });
+    $('acctMsg').textContent = error ? `登録できませんでした（${error.message}）`
+      : data.session ? '' : '確認のメールを送りました。メールのリンクを押してから、ここでログインしてください。';
+  };
+  $('acctLogout').onclick = async () => {
+    if (!confirm('ログアウトしますか？（記録はクラウドに残ります）')) return;
+    await sb.auth.signOut();
+  };
+  $('loginGo').onclick = () => showView('settings');
+  $('syncNowBtn').onclick = async () => { await pullNow(); toast(cloud.error ? '同期できませんでした' : '同期しました'); };
+  $('tokenBtn').onclick = async () => {
+    if (!confirm('ショートカット用の合言葉を新しく作りますか？（前に作った合言葉もそのまま使えます）')) return;
+    const { data, error } = await sb.rpc('create_device_token', { p_label: 'iPhoneのショートカット' });
+    if (error) return toast('合言葉を作れませんでした');
+    $('tokenVal').value = data;
+    $('tokenBox').hidden = false;
+  };
+  $('tokenCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText($('tokenVal').value); toast('コピーしました'); }
+    catch (e) { $('tokenVal').select(); toast('長押しでコピーしてください'); }
+  };
+
   // ---------- タブ ----------
   function showView(v) {
     closeSheet();
@@ -2414,6 +2791,7 @@
   // ほかのタブが保存したら、このタブも読み直す
   function reloadState() {
     state = load();
+    snap = loadSnap();
     renderLog();
     if ($('view-body').classList.contains('on')) renderBody();
     if ($('view-history').classList.contains('on')) renderHistory();
@@ -2424,12 +2802,13 @@
     if (document.visibilityState !== 'visible') return;
     reloadState();
     handleHash();
+    if (CLOUD) pullNow();
   });
 
   // ---------- ホーム画面のWebアプリ対策 ----------
   // Webアプリとして開くと保存場所がSafariと別になる。記録をURLに詰めてSafariへ渡し、Safari側で合わせる
   const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-  $('standaloneWarn').hidden = !standalone;
+  $('standaloneWarn').hidden = !standalone || CLOUD;
   const b64enc = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const b64dec = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
   $('moveToSafari').onclick = () => {
@@ -2454,7 +2833,7 @@
   if (!location.hash && !state.home && !standalone) { state.home = true; save(); }
 
   renderLog();
-  handleHash();
+  if (CLOUD) startCloud().finally(handleHash); else handleHash();
   loadPhotos().then(() => { if ($('view-body').classList.contains('on')) renderPhotos(); });
 })();
 </script>
